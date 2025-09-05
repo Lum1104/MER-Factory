@@ -163,9 +163,11 @@ python main.py ./images ./output --type MER
 
 注意：如果需要使用 Ollama 模型，请运行 `ollama pull llama3.2` 等命令预先下载模型。Ollama 目前不支持视频分析。
 
-### 数据整理与超参数调优仪表板
+### 交互式仪表板
 
-我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。通过该仪表板，您可以测试不同的提示语，保存并运行配置，还可以对生成的数据进行评分。
+我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。
+
+通过该仪表板，您可以方便地选择不同类型的模型、不同的预训练模型、任务类别，也可以根据您的需求更换提示词模板进行测试，支持一键式生成命令，并在仪表板直接运行 MER-Factory 以生成数据集，还可以对生成的数据进行评分。
 
 要启动仪表板，请使用以下命令：
 
@@ -264,7 +266,7 @@ python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 
 1. **Google Gemini**（默认）：需要在 `.env` 中配置 `GOOGLE_API_KEY`
 2. **OpenAI ChatGPT**：需要在 `.env` 中配置 `OPENAI_API_KEY`，通过 `--chatgpt-model` 指定
-3. **Ollama**：本地模型，通过 `--ollama-vision-model` 和 `--ollama-text-model` 指定
+3. **Ollama**：本地模型，需要预安装 ollama，通过 `--ollama-vision-model` 和 `--ollama-text-model` 指定
 4. **Hugging Face**：目前支持类似 `google/gemma-3n-E4B-it` 的多模态模型
 
 **注意**：如果使用 Hugging Face 模型，会自动将并发设置为 1，以实现同步处理。

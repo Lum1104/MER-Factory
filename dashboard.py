@@ -68,6 +68,7 @@ def serve_static_from_tools(filename):
     """
     # 1. Handle absolute paths (the requested bug fix).
     # This allows previewing media from any location on the user's machine.
+    abs_path_candidate = filename
     if os.name != 'nt' and not filename.startswith('/'):
         abs_path_candidate = '/' + filename
     
@@ -323,7 +324,7 @@ def export_results():
 
 if __name__ == "__main__":
     try:
-        app.run(debug=False, port=5000, use_reloader=False, threaded=True)
+        app.run(debug=False, port=5002, use_reloader=False, threaded=True)
     except KeyboardInterrupt:
         print("\n[DASHBOARD] Keyboard interrupt received, shutting down...")
         cleanup_process()
