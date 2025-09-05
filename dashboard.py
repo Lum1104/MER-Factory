@@ -324,7 +324,7 @@ def export_results():
 
 if __name__ == "__main__":
     try:
-        app.run(debug=False, port=5002, use_reloader=False, threaded=True)
+        app.run(debug=False, port=5000, use_reloader=False, threaded=True)
     except KeyboardInterrupt:
         print("\n[DASHBOARD] Keyboard interrupt received, shutting down...")
         cleanup_process()
