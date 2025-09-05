@@ -163,7 +163,7 @@ python main.py ./images ./output --type MER
 
 注意：如果需要使用 Ollama 模型，请运行 `ollama pull llama3.2` 等命令预先下载模型。Ollama 目前不支持视频分析。
 
-### 交互式仪表板
+### 数据整理与超参数调优仪表板
 
 我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。
 
