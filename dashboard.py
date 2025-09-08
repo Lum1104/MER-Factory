@@ -68,6 +68,7 @@ def serve_static_from_tools(filename):
     """
     # 1. Handle absolute paths (the requested bug fix).
     # This allows previewing media from any location on the user's machine.
+    abs_path_candidate = filename
     if os.name != 'nt' and not filename.startswith('/'):
         abs_path_candidate = '/' + filename
     

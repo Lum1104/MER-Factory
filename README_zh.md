@@ -165,7 +165,9 @@ python main.py ./images ./output --type MER
 
 ### 数据整理与超参数调优仪表板
 
-我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。通过该仪表板，您可以测试不同的提示语，保存并运行配置，还可以对生成的数据进行评分。
+我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。
+
+通过该仪表板，您可以方便地选择不同类型的模型、不同的预训练模型、任务类别，也可以根据您的需求更换提示词模板进行测试，支持一键式生成命令，并在仪表板直接运行 MER-Factory 以生成数据集，还可以对生成的数据进行评分。
 
 要启动仪表板，请使用以下命令：
 
@@ -264,7 +266,7 @@ python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 
 1. **Google Gemini**（默认）：需要在 `.env` 中配置 `GOOGLE_API_KEY`
 2. **OpenAI ChatGPT**：需要在 `.env` 中配置 `OPENAI_API_KEY`，通过 `--chatgpt-model` 指定
-3. **Ollama**：本地模型，通过 `--ollama-vision-model` 和 `--ollama-text-model` 指定
+3. **Ollama**：本地模型，需要预安装 ollama，通过 `--ollama-vision-model` 和 `--ollama-text-model` 指定
 4. **Hugging Face**：目前支持类似 `google/gemma-3n-E4B-it` 的多模态模型
 
 **注意**：如果使用 Hugging Face 模型，会自动将并发设置为 1，以实现同步处理。
@@ -318,6 +320,94 @@ python main.py video.mp4 output/ --type MER --silent
 2. **选项 2 - 请求支持**：在我们的仓库中提交问题，告诉我们您希望我们支持的模型，我们会考虑添加。
 
 **当前支持的模型**：`google/gemma-3n-E4B-it` 以及其他在 HF 模型目录中列出的模型。
+
+## 训练
+
+本训练指南将引导您完成从**数据分析/标注**到**启动模型训练**的完整端到端流程。该流程分为两个主要阶段：
+
+1.  **阶段一：自动化数据准备**：使用 `train.sh` 脚本，将 MER-Factory 的分析产出，一键转换为训练框架所需的标准数据集格式，并自动完成注册。
+2.  **阶段二：交互式启动训练**：启动 LLaMA-Factory 的图形化界面（Web UI），在其中加载准备好的数据集，并自由配置所有训练参数。
+
+
+### 准备工作
+
+在开始之前，请确保您已完成以下环境准备：
+
+1.  **初始化子模块**
+   
+    本项目使用 Git Submodule 来集成 LLaMA-Factory，以确保训练环境的版本一致性和可复现性。
+    
+    请在克隆本仓库后，运行以下命令来初始化并下载子模块：
+    ```bash
+    git submodule update --init --recursive
+    ```
+
+2.  **安装依赖**
+   
+    本项目和 LLaMA-Factory 子模块拥有各自独立的依赖环境，需要分别安装：
+    ```bash
+    # 1. 安装 MER-Factory 的主依赖
+    pip install -r requirements.txt
+
+    # 2. 安装 LLaMA-Factory 子模块的依赖
+    pip install -r LLaMA-Factory/requirements.txt
+    ```
+
+### 阶段一：自动化数据准备
+
+在您使用 MER-Factory 的 `main.py` 完成对原始数据的分析之后，就可以使用 `train.sh` 脚本来准备数据集了。
+
+此脚本的核心任务是**自动化所有繁琐的数据准备工作**。它会读取 MER-Factory 的分析结果，将其转换为 LLaMA-Factory 所需的 ShareGPT 格式，并自动在 LLaMA-Factory 中完成注册。
+
+#### 使用示例
+
+为了保证实验的可追溯性和一致性，我们推荐使用以下格式为您的数据集命名：
+
+`原始数据集_分析模型_任务类型`
+
+处理 **MER** 任务的数据，并按规范命名数据集：
+```bash
+# 假设使用了 llava 和 llama3.2 两个分析模型
+bash train.sh --file_type "image" --dataset_name "mer2025_llava_llama3.2_MER"
+```
+
+处理 **audio** 任务的数据，并按规范命名数据集：
+```bash
+# 假设使用了 gemini api 模型
+bash train.sh --file_type "audio" --dataset_name "mer2025_gemini_audio"
+```
+
+处理 **video** 任务的数据，并按规范命名数据集：
+```bash
+# 假设使用了 gemini api 模型
+bash train.sh --file_type "video" --dataset_name "mer2025_gemini_video"
+```
+
+处理 **image** 任务的数据，并按规范命名数据集：
+```bash
+# 假设使用了 chatgpt gpt-4o 模型
+bash train.sh --file_type "mer" --dataset_name "mer2025_gpt-4o_image"
+```
+
+脚本成功运行后，您的数据集（如：mer2025_llava_llama3.2_MER）就已经准备就绪，并注册到了 LLaMA-Factory 的 dataset_info 中，可以在下一阶段直接使用。
+
+### 阶段二：启动训练 (启动 LLaMA-Factory Web UI)
+
+当您的数据集准备好后，就可以启动 LLaMA-Factory 的图形化界面来配置和开始您的训练任务。
+
+1. **进入 LLaMA-Factory 目录**
+   
+   ```bash
+   cd LLaMA-Factory
+   ```
+2. **启动 Web UI**
+   
+   ```bash
+   llamafactory-cli webui
+   ```
+3. **在 Web UI 中配置并训练**
+
+
 
 ## 引用
 

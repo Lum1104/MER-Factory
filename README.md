@@ -319,6 +319,93 @@ If you want to use the latest HF models or features that Ollama doesn't support:
 
 **Current supported models**: `google/gemma-3n-E4B-it` and others listed in the HF models directory.
 
+## Training
+
+This training guide will walk you through the complete end-to-end process from **Data Analysis/Annotation** to **Launching Model Training**. The process is divided into two main stages:
+
+1.  **Stage One: Automated Data Preparation**: Use the `train.sh` script to convert the analysis output from MER-Factory into the standard dataset format required by the training framework with a single command, and automatically complete the registration.
+2.  **Stage Two: Interactive Training Launch**: Start the LLaMA-Factory graphical user interface (Web UI), load the prepared dataset, and freely configure all training parameters.
+
+
+### Prerequisites
+
+Before you begin, please ensure that you have completed the following environmental preparations:
+
+1.  **Initialize Submodules**
+   
+   This project uses Git Submodules to integrate LLaMA-Factory to ensure version consistency and reproducibility of the training environment.
+   
+   After cloning this repository, please run the following command to initialize and download the submodules:
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2.  **Install Dependencies**
+   This project and the LLaMA-Factory submodule have their own separate dependency environments, which need to be installed individually:
+   ```bash
+   # 1. Install the main dependencies for MER-Factory
+   pip install -r requirements.txt
+
+   # 2. Install the dependencies for the LLaMA-Factory submodule
+   pip install -r LLaMA-Factory/requirements.txt
+   ```
+
+### Stage One: Automated Data Preparation
+
+After you have finished analyzing the raw data using MER-Factory's `main.py`, you can use the `train.sh` script to prepare the dataset.
+
+The core task of this script is to **automate all the tedious data preparation work**. It reads the analysis results from MER-Factory, converts them into the ShareGPT format required by LLaMA-Factory, and automatically registers the dataset within LLaMA-Factory.
+
+#### Usage Example
+
+To ensure the traceability and consistency of experiments, we recommend naming your dataset using the following format:
+
+`RawDataset_AnalysisModel_TaskType`
+
+Process data for an **MER** task and name the dataset according to the convention:
+```bash
+# Assuming the llava and llama3.2 analysis models were used
+bash train.sh --file_type "image" --dataset_name "mer2025_llava_llama3.2_MER"
+```
+
+Process data for an **audio** task and name the dataset according to the convention:
+```bash
+# Assuming the gemini api model was used
+bash train.sh --file_type "audio" --dataset_name "mer2025_gemini_audio"
+```
+
+Process data for a **video** task and name the dataset according to the convention:
+```bash
+# Assuming the gemini api model was used
+bash train.sh --file_type "video" --dataset_name "mer2025_gemini_video"
+```
+
+Process data for an **image** task and name the dataset according to the convention:
+```bash
+# Assuming the chatgpt gpt-4o model was used
+bash train.sh --file_type "mer" --dataset_name "mer2025_gpt-4o_image"
+```
+
+After the script runs successfully, your dataset (e.g., mer2025_llava_llama3.2_MER) will be ready and registered in LLaMA-Factory's dataset_info, making it directly available for use in the next stage.
+
+### Stage Two: Launch Training (Start LLaMA-Factory Web UI)
+
+Once your dataset is ready, you can launch the LLaMA-Factory graphical interface to configure and start your training task.
+
+1. **Navigate to the LLaMA-Factory Directory**
+   
+   ```bash
+   cd LLaMA-Factory
+   ```
+2. **Start the Web UI**
+   
+   ```bash
+   llamafactory-cli webui
+   ```
+3. **Configure and Train in the Web UI**
+
+
+
 ## Citation
 
 If you find MER-Factory useful in your research or project, please consider giving us a ⭐! Your support helps us grow and continue improving.
