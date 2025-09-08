@@ -10,19 +10,23 @@
 set -e # Exit immediately if any command exits with a non-zero status.
 set -o pipefail # The return value of a pipeline is the status of the last command to exit with a non-zero status.
 
-# --- Default Configuration ---
-FRAMEWORK="llama_factory"
-OUTPUT_DIR_BASE="./output_models"
-DATA_SOURCE_DIR="/data/MER_Factory/MER2025/100videos_dataset"
-FILE_TYPE="mer"
-DATASET_NAME="mer_factory_$(date +%Y%m%d)"
+# --- Configuration ---
+FRAMEWORK="llama_factory" # Specify the training framework, llama_factory / ms-swift
+OUTPUT_DIR_BASE="./output_models" # # Specify where training model output stored
+DATA_SOURCE_DIR="/path/to/your/origin/dataset" # Path to the MER-Factory analysis results folder
+FILE_TYPE="mer" # The type of analysis file to process
+DATASET_NAME="OriginDatasetName_ModelName_MissionType" # eg: mer2025_llava_llama3.2_MER
+EXPORT_DIR="./training_data" # Path to the final results folder
+mkdir -p "${EXPORT_DIR}"
+OUTPUT_DIR="${OUTPUT_DIR_BASE}/${FRAMEWORK}_${DATASET_NAME}"
+INTERMEDIATE_CSV_PATH="${EXPORT_DIR}/${FILE_TYPE}_export_data.csv"
 
 # --- Help Function ---
 usage() {
     echo "Usage: $0 [options]"
     echo
     echo "Options:"
-    echo "  -f, --framework <name>      Specify the training framework: 'llama_factory' (currently supported). (Default: ${FRAMEWORK})"
+    echo "  -f, --framework <name>      Specify the training framework: 'llama_factory' (currently supported) or ms-swift. (Default: ${FRAMEWORK})"
     echo "  -o, --output_dir <path>     Specify the root directory to save trained models. (Default: ${OUTPUT_DIR_BASE})"
     echo "  -d, --data_source <path>    Path to the MER-Factory analysis results folder. (Default: ${DATA_SOURCE_DIR})"
     echo "  -t, --file_type <type>      The type of analysis file to process (e.g., 'mer', 'image', 'video'). (Default: ${FILE_TYPE})"
@@ -45,12 +49,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
-
-# --- Variable Setup ---
-EXPORT_DIR="./training_data"
-mkdir -p "${EXPORT_DIR}"
-OUTPUT_DIR="${OUTPUT_DIR_BASE}/${FRAMEWORK}_${DATASET_NAME}"
-INTERMEDIATE_CSV_PATH="${EXPORT_DIR}/${FILE_TYPE}_export_data.csv"
 
 # --- Step 1: Export Dataset ---
 echo "🚀 [Step 1/3] Exporting dataset for framework: ${FRAMEWORK}..."
