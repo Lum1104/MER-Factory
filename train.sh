@@ -13,13 +13,11 @@ set -o pipefail # The return value of a pipeline is the status of the last comma
 # --- Configuration ---
 FRAMEWORK="llama_factory" # Specify the training framework, llama_factory / ms-swift
 OUTPUT_DIR_BASE="./output_models" # # Specify where training model output stored
-DATA_SOURCE_DIR="/path/to/your/origin/dataset" # Path to the MER-Factory analysis results folder
+DATA_SOURCE_DIR="" # Path to the MER-Factory analysis results folder (required)
 FILE_TYPE="mer" # The type of analysis file to process
 DATASET_NAME="OriginDatasetName_ModelName_MissionType" # eg: mer2025_llava_llama3.2_MER
 EXPORT_DIR="./training_data" # Path to the final results folder
-mkdir -p "${EXPORT_DIR}"
-OUTPUT_DIR="${OUTPUT_DIR_BASE}/${FRAMEWORK}_${DATASET_NAME}"
-INTERMEDIATE_CSV_PATH="${EXPORT_DIR}/${FILE_TYPE}_export_data.csv"
+## Derived variables are computed AFTER parsing CLI args
 
 # --- Help Function ---
 usage() {
@@ -28,12 +26,13 @@ usage() {
     echo "Options:"
     echo "  -f, --framework <name>      Specify the training framework: 'llama_factory' (currently supported) or ms-swift. (Default: ${FRAMEWORK})"
     echo "  -o, --output_dir <path>     Specify the root directory to save trained models. (Default: ${OUTPUT_DIR_BASE})"
-    echo "  -d, --data_source <path>    Path to the MER-Factory analysis results folder. (Default: ${DATA_SOURCE_DIR})"
+    echo "  -d, --data_source <path>    Path to the MER-Factory analysis results folder. (Required)"
     echo "  -t, --file_type <type>      The type of analysis file to process (e.g., 'mer', 'image', 'video'). (Default: ${FILE_TYPE})"
     echo "  -n, --dataset_name <name>   Specify a unique name for your dataset. (Default: ${DATASET_NAME})"
+    echo "  -e, --export_dir <path>     Directory to place exported training data. (Default: ${EXPORT_DIR})"
     echo "  -h, --help                  Show this help message."
     echo
-    echo "Example: ./train.sh -n my_video_dataset -t video"
+    echo "Example: ./train.sh -d ./mer_results -n my_video_dataset -t video -e ./my_export"
 }
 
 # --- Argument Parsing ---
@@ -44,11 +43,29 @@ while [[ "$#" -gt 0 ]]; do
         -d|--data_source) DATA_SOURCE_DIR="$2"; shift ;;
         -t|--file_type) FILE_TYPE="$2"; shift ;;
         -n|--dataset_name) DATASET_NAME="$2"; shift ;;
+        -e|--export_dir) EXPORT_DIR="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown parameter: $1"; usage; exit 1 ;;
     esac
     shift
 done
+
+# --- Post-Parse Validation & Derived Variables ---
+if [ -z "${DATA_SOURCE_DIR}" ]; then
+    echo "❌ Error: --data_source is required."
+    echo
+    usage
+    exit 1
+fi
+
+if [ ! -d "${DATA_SOURCE_DIR}" ]; then
+    echo "❌ Error: data source directory does not exist: ${DATA_SOURCE_DIR}"
+    exit 1
+fi
+
+mkdir -p "${EXPORT_DIR}"
+OUTPUT_DIR="${OUTPUT_DIR_BASE}/${FRAMEWORK}_${DATASET_NAME}"
+INTERMEDIATE_CSV_PATH="${EXPORT_DIR}/${FILE_TYPE}_export_data.csv"
 
 # --- Step 1: Export Dataset ---
 echo "🚀 [Step 1/3] Exporting dataset for framework: ${FRAMEWORK}..."
