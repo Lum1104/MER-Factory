@@ -2,7 +2,6 @@ import json
 from rich.console import Console
 from pathlib import Path
 import asyncio
-from typing import Dict, List
 
 
 from mer_factory.prompts import PromptTemplates
@@ -12,93 +11,6 @@ from tools.emotion_analyzer import EmotionAnalyzer
 from tools.facial_analyzer import FacialAnalyzer
 
 console = Console(stderr=True)
-
-
-async def batch_setup(state):
-    """Initialize batch processing state."""
-    files_to_process = state.get("files_to_process", [])
-    if not files_to_process:
-        return {"error": "No files provided for batch processing"}
-    
-    batch_results = {"success": 0, "failure": 0, "skipped": 0}
-    current_file_index = 0
-    
-    if state.get("verbose", True):
-        console.log(f"Starting batch processing of {len(files_to_process)} files")
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index,
-    }
-
-
-async def process_next_file(state):
-    """Process the next file in the batch or finish if done."""
-    files_to_process = state.get("files_to_process", [])
-    current_file_index = state.get("current_file_index", 0)
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    
-    if current_file_index >= len(files_to_process):
-        # Batch processing complete
-        if state.get("verbose", True):
-            console.log("Batch processing complete!")
-            console.log(f"✅ Successful: {batch_results['success']}")
-            console.log(f"❌ Failed: {batch_results['failure']}")
-            console.log(f"⏭️ Skipped: {batch_results['skipped']}")
-        return {"batch_complete": True}
-    
-    # Get current file and setup for processing
-    current_file = files_to_process[current_file_index]
-    file_id = current_file.stem
-    file_output_dir = state["output_dir"] / file_id
-    file_output_dir.mkdir(exist_ok=True)
-    
-    # Determine processing type based on file extension
-    from utils.config import IMAGE_EXTENSIONS, AUDIO_EXTENSIONS
-    
-    is_image = current_file.suffix.lower() in IMAGE_EXTENSIONS
-    is_audio = current_file.suffix.lower() in AUDIO_EXTENSIONS
-    
-    if is_audio:
-        current_processing_type = "audio"
-        video_path = current_file
-        audio_path = current_file
-        au_data_path = None
-    elif is_image:
-        current_processing_type = "image"
-        video_path = current_file
-        audio_path = None
-        au_data_path = file_output_dir / f"{file_id}.csv"
-    else:  # It's a video
-        current_processing_type = state["processing_type"]
-        video_path = current_file
-        audio_path = file_output_dir / f"{file_id}.wav"
-        au_data_path = file_output_dir / f"{file_id}.csv"
-    
-    # Update state for current file
-    updated_state = {
-        "video_path": video_path,
-        "audio_path": audio_path,
-        "au_data_path": au_data_path,
-        "processing_type": current_processing_type,
-        "video_id": file_id,
-        "video_output_dir": file_output_dir,
-        "current_file_index": current_file_index,  # Keep current index, will be incremented after processing
-    }
-    
-    # Add ground truth label if available
-    ground_truth_label = state.get("labels", {}).get(file_id)
-    if ground_truth_label:
-        updated_state["ground_truth_label"] = ground_truth_label
-        if state.get("verbose", True):
-            console.log(
-                f"Found ground truth label for {file_id}: [bold yellow]{ground_truth_label}[/bold yellow]"
-            )
-    
-    if state.get("verbose", True):
-        console.log(f"Processing file {current_file_index + 1}/{len(files_to_process)}: {current_file.name}")
-    
-    return updated_state
 
 
 async def setup_paths(state):
@@ -148,16 +60,7 @@ async def save_au_results(state):
     await asyncio.to_thread(_save)
     if verbose:
         console.print(f"AU analysis results saved to [green]{output_path}[/green]")
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["success"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {}
 
 
 async def generate_audio_description(state):
@@ -228,16 +131,7 @@ async def save_audio_results(state):
     await asyncio.to_thread(_save)
     if verbose:
         console.print(f"Results saved to [cyan]{output_path}[/cyan]")
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["success"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {}
 
 
 async def generate_video_description(state):
@@ -296,16 +190,7 @@ async def save_video_results(state):
     await asyncio.to_thread(_save)
     if verbose:
         console.print(f"Video analysis results saved to [green]{output_path}[/green]")
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["success"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {}
 
 
 async def extract_full_features(state):
@@ -554,16 +439,7 @@ async def save_mer_results(state):
     await asyncio.to_thread(_save)
     if verbose:
         console.print(f"Full analysis saved to [green]{output_path}[/green]")
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["success"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {}
 
 
 async def handle_error(state):
@@ -584,17 +460,7 @@ async def handle_error(state):
             )
 
     await asyncio.to_thread(_save)
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["failure"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "error": None,  # Clear error state to continue processing
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {"error": error_msg}
 
 
 async def run_image_analysis(state):
@@ -721,13 +587,4 @@ async def save_image_results(state):
     await asyncio.to_thread(_save)
     if verbose:
         console.print(f"Image analysis results saved to [green]{output_path}[/green]")
-    
-    # Update batch results and increment file index
-    batch_results = state.get("batch_results", {"success": 0, "failure": 0, "skipped": 0})
-    batch_results["success"] += 1
-    current_file_index = state.get("current_file_index", 0)
-    
-    return {
-        "batch_results": batch_results,
-        "current_file_index": current_file_index + 1
-    }
+    return {}

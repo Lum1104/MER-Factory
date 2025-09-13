@@ -20,11 +20,6 @@ class MERRState(TypedDict, total=False):
     verbose: bool  # Flag for detailed logging output.
     cache: bool  # Flag to reuse existing analysis results from previous runs.
     ground_truth_label: str  # Optional ground truth label for the media file.
-    
-    # === BATCH PROCESSING SUPPORT ===
-    files_to_process: List[Path]  # List of all files to process in batch
-    current_file_index: int  # Current index in the files_to_process list
-    batch_results: Dict[str, int]  # Results tracking for batch processing
 
     # === FILE & PATH MANAGEMENT ===
     video_path: Path  # Path to the source video or image file.

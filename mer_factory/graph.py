@@ -73,20 +73,6 @@ def route_after_video_generation(state: MERRState) -> str:
     return "handle_error"
 
 
-def route_batch_processing(state: MERRState) -> str:
-    """Routes batch processing - either process next file or finish batch."""
-    if state.get("error"):
-        return "handle_error"
-    
-    files_to_process = state.get("files_to_process", [])
-    current_file_index = state.get("current_file_index", 0)
-    
-    if current_file_index >= len(files_to_process):
-        return "batch_complete"
-    
-    return "setup_paths"
-
-
 def create_graph(use_sync_nodes: bool = False):
     """
     Creates and compiles the modular MERR construction graph.
@@ -104,8 +90,6 @@ def create_graph(use_sync_nodes: bool = False):
     workflow = StateGraph(MERRState)
 
     # --- Node Definitions ---
-    workflow.add_node("batch_setup", nodes.batch_setup)
-    workflow.add_node("process_next_file", nodes.process_next_file)
     workflow.add_node("setup_paths", nodes.setup_paths)
     workflow.add_node("handle_error", nodes.handle_error)
 
@@ -141,23 +125,9 @@ def create_graph(use_sync_nodes: bool = False):
     workflow.add_node("save_image_results", nodes.save_image_results)
 
     # --- Define Graph Structure ---
-    workflow.set_entry_point("batch_setup")
+    workflow.set_entry_point("setup_paths")
 
-    # 1. Batch processing setup
-    workflow.add_edge("batch_setup", "process_next_file")
-    
-    # 2. Process next file or finish batch
-    workflow.add_conditional_edges(
-        "process_next_file",
-        route_batch_processing,
-        {
-            "setup_paths": "setup_paths",
-            "handle_error": "handle_error",
-            "batch_complete": END,
-        },
-    )
-
-    # 3. Main router from setup to pipeline entry points
+    # 1. Main router from setup to pipeline entry points
     workflow.add_conditional_edges(
         "setup_paths",
         route_by_processing_type,
@@ -228,13 +198,13 @@ def create_graph(use_sync_nodes: bool = False):
     workflow.add_edge("run_image_analysis", "synthesize_image_summary")
     workflow.add_edge("synthesize_image_summary", "save_image_results")
 
-    # 5. Define terminal nodes for all pipelines - return to batch processing
-    workflow.add_edge("save_au_results", "process_next_file")
-    workflow.add_edge("save_audio_results", "process_next_file")
-    workflow.add_edge("save_video_results", "process_next_file")
-    workflow.add_edge("save_mer_results", "process_next_file")
-    workflow.add_edge("save_image_results", "process_next_file")
-    workflow.add_edge("handle_error", "process_next_file")
+    # 5. Define terminal nodes for all pipelines
+    workflow.add_edge("save_au_results", END)
+    workflow.add_edge("save_audio_results", END)
+    workflow.add_edge("save_video_results", END)
+    workflow.add_edge("save_mer_results", END)
+    workflow.add_edge("save_image_results", END)
+    workflow.add_edge("handle_error", END)
 
     app = workflow.compile()
 
