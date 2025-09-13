@@ -154,71 +154,59 @@ async def run_main_processing(
     is_sync: bool,
 ) -> Dict[str, int]:
     """
-    Manages the main processing loop, checking for cached final outputs first,
-    then dispatching to sync or async helpers.
+    Manages the main processing loop using batch processing within the graph.
+    This avoids the compilation frequency issue when processing many files.
     """
     results = {"success": 0, "failure": 0, "skipped": 0}
     total_files = len(files_to_process)
-    semaphore = asyncio.Semaphore(config.concurrency)
+    
+    # Check for cached files first
+    final_output_suffix = FINAL_OUTPUT_FILENAMES.get(config.processing_type)
+    files_to_run = []
+    
+    if config.cache and final_output_suffix:
+        for file_path in files_to_process:
+            file_id = file_path.stem
+            file_output_dir = config.output_dir / file_id
+            final_output_path = file_output_dir / f"{file_id}{final_output_suffix}"
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("({task.completed} of {task.total})"),
-        TimeRemainingColumn(),
-        console=console,
-        transient=False,
-        disable=config.verbose,
-    ) as progress:
-        task = progress.add_task("Processing files...", total=total_files)
-
-        final_output_suffix = FINAL_OUTPUT_FILENAMES.get(config.processing_type)
-
-        files_to_run = []
-        if config.cache and final_output_suffix:
-            for file_path in files_to_process:
-                file_id = file_path.stem
-                file_output_dir = config.output_dir / file_id
-                final_output_path = file_output_dir / f"{file_id}{final_output_suffix}"
-
-                if final_output_path.exists():
-                    if config.verbose:
-                        console.log(
-                            f"Cache hit: Final output for [cyan]{file_path.name}[/cyan] found. Skipping."
-                        )
-                    progress.update(
-                        task,
-                        advance=1,
-                        description=f"Skipped [cyan]{file_path.name}[/cyan]",
+            if final_output_path.exists():
+                if config.verbose:
+                    console.log(
+                        f"Cache hit: Final output for [cyan]{file_path.name}[/cyan] found. Skipping."
                     )
-                    results["skipped"] += 1
-                else:
-                    files_to_run.append(file_path)
-        else:
-            files_to_run = files_to_process
+                results["skipped"] += 1
+            else:
+                files_to_run.append(file_path)
+    else:
+        files_to_run = files_to_process
 
-        if not files_to_run:
-            return results
+    if not files_to_run:
+        return results
 
-        if is_sync:
-            # Synchronous execution
-            for file_path in files_to_run:
-                initial_state = initial_state_builder(file_path=file_path)
-                invoke_func = functools.partial(graph_app.invoke, initial_state)
-                _run_sync_job(invoke_func, file_path, task, progress, results)
-        else:
-            # Asynchronous execution
-            tasks = []
-            for file_path in files_to_run:
-                initial_state = initial_state_builder(file_path=file_path)
-                coro = graph_app.ainvoke(initial_state)
-                tasks.append(
-                    _run_async_job(coro, file_path, task, progress, results, semaphore)
-                )
-            if tasks:
-                await asyncio.gather(*tasks)
+    # Build initial state for batch processing
+    # We'll use the first file to build the base state, then add batch info
+    first_file = files_to_run[0]
+    base_state = initial_state_builder(file_path=first_file)
+    
+    # Add batch processing information
+    batch_state = {
+        **base_state,
+        "files_to_process": files_to_run,
+        "current_file_index": 0,
+        "batch_results": {"success": 0, "failure": 0, "skipped": 0},
+    }
 
+    # Run the graph once with batch processing
+    if is_sync:
+        final_state = graph_app.invoke(batch_state)
+    else:
+        final_state = await graph_app.ainvoke(batch_state)
+    
+    # Extract results from the final state
+    if final_state and "batch_results" in final_state:
+        results.update(final_state["batch_results"])
+    
     return results
 
 
