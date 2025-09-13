@@ -10,6 +10,10 @@ HUGGINGFACE_MODEL_REGISTRY = {
     "zhifeixie/Audio-Reasoner": (".audio_reasoner", "AudioReasonerModel"),
     "Qwen/Qwen2.5-Omni-7B": (".qwen2_5_omni", "Qwen2_5OmniModel"),
     "Qwen/Qwen2.5-Omni-3B": (".qwen2_5_omni", "Qwen2_5OmniModel"),
+    # DistilGPT2轻量级文本模型（英文）
+    "distilbert/distilgpt2": (".custom_text_model", "DistilGPT2Model"),
+    # Qwen2.5-0.5B-Instruct轻量级中文文本模型
+    "Qwen/Qwen2.5-0.5B-Instruct": (".qwen2_5_0_5b", "Qwen2_5_0_5BModel"),
 }
 
 
