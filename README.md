@@ -4,11 +4,6 @@
 </p>
 <br>
 
-> [!IMPORTANT]
-> ✍️ The real challenge in Multimodal Affect Computing isn't just one step-it's the entire fragmented pipeline. The journey from raw files to a trained model is a gauntlet of tedious data preprocessing, slow and inconsistent manual annotation, and complex model training setups.  
-> 🏭 MER-Factory unifies this entire workflow into one seamless factory. We automate the heavy lifting of preprocessing and annotation to generate high-quality, reason-augmented datasets, and then bridge the gap directly to model training.  
-> 🚀 Stop juggling different tools. Let our factory handle the pipeline, so you can focus on what matters: your research.
-
 <p align="center">
   <a href="https://lum1104.github.io/MER-Factory/" target="_blank">📖 Documentation</a>
 </p>
@@ -20,6 +15,13 @@
     <img src="docs/assets/logo.svg" width="700">
   </a>
  </p>
+
+> [!IMPORTANT]
+> ✍️ **Challenge:** Multimodal Affect Computing isn't just one step-it's the entire fragmented pipeline. The journey from raw files to a trained model is a gauntlet of tedious data preprocessing, slow and inconsistent manual annotation, and complex model training setups.
+> 
+> 🏭 **MER-Factory:** Unifies this entire workflow into one seamless factory. We automate the heavy lifting of preprocessing and annotation to generate high-quality, reason-augmented datasets, and then bridge the gap directly to model training.
+> 
+> 🚀 **Stop juggling different tools:** Let our factory handle the pipeline, so you can focus on what matters: your research.
 
 <!-- <p align="center">
   <a href="https://lum1104.github.io/MER-Factory/">
