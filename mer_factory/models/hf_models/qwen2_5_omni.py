@@ -1,6 +1,7 @@
 import torch
 from pathlib import Path
 from rich.console import Console
+from .base import BaseHFModel
 from transformers import Qwen2_5OmniForConditionalGeneration, Qwen2_5OmniProcessor
 from typing import List, Dict, Any
 
@@ -16,7 +17,7 @@ except ImportError as e:
 console = Console(stderr=True)
 
 
-class Qwen2_5OmniModel:
+class Qwen2_5OmniModel(BaseHFModel):
     """
     A wrapper for the Qwen/Qwen2.5-Omni-7B model, which is a multimodal model
     capable of processing text, audio, images, and video.
@@ -30,8 +31,7 @@ class Qwen2_5OmniModel:
             model_id (str): The ID of the Hugging Face model.
             verbose (bool): Whether to print verbose logs.
         """
-        self.model_id = model_id
-        self.verbose = verbose
+        super().__init__(model_id=model_id, verbose=verbose)
         self.processor = None
         self.model = None
         self.system_prompt = {

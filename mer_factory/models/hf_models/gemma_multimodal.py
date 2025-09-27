@@ -2,6 +2,7 @@ import os
 import torch
 from pathlib import Path
 from rich.console import Console
+from .base import BaseHFModel
 import tempfile
 import subprocess
 from typing import List, Dict, Any
@@ -11,7 +12,7 @@ from transformers import AutoProcessor, AutoModelForImageTextToText
 console = Console(stderr=True)
 
 
-class GemmaMultimodalModel:
+class GemmaMultimodalModel(BaseHFModel):
     def __init__(self, model_id: str, verbose: bool = True):
         """
         Initializes the model by loading the model and processor.
@@ -20,8 +21,7 @@ class GemmaMultimodalModel:
             model_id (str): The ID of the Hugging Face model to load.
             verbose (bool): Whether to print verbose logs.
         """
-        self.model_id = model_id
-        self.verbose = verbose
+        super().__init__(model_id=model_id, verbose=verbose)
         self.processor = None
         self.model = None
         self._initialize_pipeline()
@@ -32,12 +32,6 @@ class GemmaMultimodalModel:
             console.log(f"Initializing Hugging Face pipeline for '{self.model_id}'...")
         try:
 
-            assert self.model_id in [
-                "google/gemma-3n-E4B-it",
-                "google/gemma-3n-E2B-it",
-            ], f"Model '{self.model_id}' is not supported. Only google/gemma-3n-E4B-it and google/gemma-3n-E2B-it are currently supported."
-
-            os.environ["TOKENIZERS_PARALLELISM"] = "false"
             self.processor = AutoProcessor.from_pretrained(self.model_id)
             self.model = AutoModelForImageTextToText.from_pretrained(
                 self.model_id,
@@ -50,11 +44,7 @@ class GemmaMultimodalModel:
             console.log(
                 f"Hugging Face model '{self.model_id}' initialized successfully on device: {self.model.device}."
             )
-        except ImportError:
-            console.log(
-                "[bold red]ERROR: 'transformers' and 'torch' are required. Please run: pip install transformers torch[/bold red]"
-            )
-            raise
+
         except Exception as e:
             console.log(
                 f"[bold red]ERROR: Could not initialize Hugging Face pipeline: {e}[/bold red]"
