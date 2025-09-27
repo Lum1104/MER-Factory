@@ -45,6 +45,7 @@ MER-Factory is under active development with new features being added regularly 
 - [Usage](#usage)
   - [Basic Command Structure](#basic-command-structure)
   - [Examples](#examples)
+  - [Hugging Face Client-Server Setup](#hugging-face-client-server-setup)
   - [Command Line Options](#command-line-options)
   - [Processing Types](#processing-types)
 - [Model Support](#model-support)
@@ -57,63 +58,7 @@ MER-Factory is under active development with new features being added regularly 
 <details>
 <summary>Click here to expand/collapse</summary>
 
-
-```mermaid
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        setup_paths(setup_paths)
-        handle_error(handle_error)
-        run_au_extraction(run_au_extraction)
-        save_au_results(save_au_results)
-        generate_audio_description(generate_audio_description)
-        save_audio_results(save_audio_results)
-        generate_video_description(generate_video_description)
-        save_video_results(save_video_results)
-        extract_full_features(extract_full_features)
-        filter_by_emotion(filter_by_emotion)
-        find_peak_frame(find_peak_frame)
-        generate_peak_frame_visual_description(generate_peak_frame_visual_description)
-        generate_peak_frame_au_description(generate_peak_frame_au_description)
-        synthesize_summary(synthesize_summary)
-        save_mer_results(save_mer_results)
-        run_image_analysis(run_image_analysis)
-        synthesize_image_summary(synthesize_image_summary)
-        save_image_results(save_image_results)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> setup_paths;
-        extract_full_features --> filter_by_emotion;
-        filter_by_emotion -.-> find_peak_frame;
-        filter_by_emotion -.-> handle_error;
-        filter_by_emotion -.-> save_au_results;
-        find_peak_frame --> generate_audio_description;
-        generate_audio_description -.-> generate_video_description;
-        generate_audio_description -.-> handle_error;
-        generate_audio_description -.-> save_audio_results;
-        generate_peak_frame_au_description --> synthesize_summary;
-        generate_peak_frame_visual_description --> generate_peak_frame_au_description;
-        generate_video_description -.-> generate_peak_frame_visual_description;
-        generate_video_description -.-> handle_error;
-        generate_video_description -.-> save_video_results;
-        run_au_extraction --> filter_by_emotion;
-        run_image_analysis --> synthesize_image_summary;
-        setup_paths -. &nbsp;full_pipeline&nbsp; .-> extract_full_features;
-        setup_paths -. &nbsp;audio_pipeline&nbsp; .-> generate_audio_description;
-        setup_paths -. &nbsp;video_pipeline&nbsp; .-> generate_video_description;
-        setup_paths -.-> handle_error;
-        setup_paths -. &nbsp;au_pipeline&nbsp; .-> run_au_extraction;
-        setup_paths -. &nbsp;image_pipeline&nbsp; .-> run_image_analysis;
-        synthesize_image_summary --> save_image_results;
-        synthesize_summary --> save_mer_results;
-        handle_error --> __end__;
-        save_au_results --> __end__;
-        save_audio_results --> __end__;
-        save_image_results --> __end__;
-        save_mer_results --> __end__;
-        save_video_results --> __end__;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
+Remove for now, call the (print(app.get_graph().draw_mermaid())) graph.py to view
 
 </details>
 
@@ -167,6 +112,23 @@ python main.py ./images ./output --type MER
 ```
 
 Note: Run `ollama pull llama3.2` etc, if Ollama model is needed. Ollama does not support video analysis for now.
+
+### Hugging Face Client-Server Setup
+
+When selecting a Hugging Face model with `--huggingface-model`, MER-Factory forwards all calls through a lightweight client that talks to a local/remote API server which actually hosts the HF model. This keeps your main environment clean and allows easy scaling.
+
+1) Start the HF API Server (in a separate terminal):
+
+```bash
+# Example: serve Whisper base on port 7860
+python -m mer_factory.models.hf_api_server --model_id openai/whisper-base --host 0.0.0.0 --port 7860
+```
+
+2) Run MER-Factory as usual and select the HF model by ID:
+
+```bash
+python main.py path_to_video/ output/ --type MER --huggingface-model openai/whisper-base --silent
+```
 
 ### Dashboard for Data Curation and Hyperparameter Tuning
 
@@ -237,7 +199,7 @@ The `--task` option allows you to choose between different analysis tasks:
 #### 1. Emotion Recognition (Default)
 Performs detailed emotion analysis with granular emotion categories:
 ```bash
-python main.py video.mp4 output/ --task "Emotion Recognition"
+python main.py video.mp4 output/ --task "MERR"
 # or simply omit the --task option since it's the default
 python main.py video.mp4 output/
 ```
@@ -356,7 +318,7 @@ Before you begin, please ensure that you have completed the following environmen
 
 ### Stage One: Automated Data Preparation
 
-After you have finished analyzing the raw data using MER-Factory's `main.py`, you can use the `train.sh` script to prepare the dataset.
+After you have finished analyzing the raw data using **`main.py`**, you can use the `train.sh` script to prepare the dataset.
 
 The core task of this script is to **automate all the tedious data preparation work**. It reads the analysis results from MER-Factory, converts them into the ShareGPT format required by LLaMA-Factory, and automatically registers the dataset within LLaMA-Factory.
 

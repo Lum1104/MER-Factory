@@ -4,7 +4,7 @@ import diskcache
 from .api_models.gemini import GeminiModel
 from .api_models.ollama import OllamaModel
 from .api_models.chatgpt import ChatGptModel
-from .hf_models import get_hf_model_class
+from .hf_models.hf_client import HFGradioClientModel
 from utils.caching import cache_llm_call
 
 
@@ -41,7 +41,7 @@ class LLMModels:
         hf_model_class = None
         if huggingface_model_id:
             try:
-                hf_model_class = get_hf_model_class(huggingface_model_id)
+                hf_model_class = HFGradioClientModel
             except ValueError as e:
                 raise e
 

@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from pathlib import Path
 from rich.console import Console
+from .base import BaseHFModel
 
 try:
     from swift.llm import PtEngine, InferRequest, RequestConfig
@@ -15,7 +16,7 @@ except ImportError as e:
 console = Console(stderr=True)
 
 
-class AudioReasonerModel:
+class AudioReasonerModel(BaseHFModel):
     """
     A wrapper for an audio reasoning model using the Swift library.
     It is designed to handle audio-based queries and provide detailed,
@@ -30,8 +31,7 @@ class AudioReasonerModel:
             model_id (str): The path to the model checkpoint.
             verbose (bool): Whether to print verbose logs.
         """
-        self.model_id = model_id
-        self.verbose = verbose
+        super().__init__(model_id=model_id, verbose=verbose)
         self.engine = None
 
         self.system_prompt = (
@@ -139,35 +139,3 @@ class AudioReasonerModel:
         str_response = self._run_generation(messages)
 
         return str_response
-
-    def describe_facial_expression(self, au_text: str) -> str:
-        """Not supported by this audio-focused model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support facial expression analysis.[/yellow]"
-            )
-        return ""
-
-    def describe_image(self, image_path: Path) -> str:
-        """Not supported by this audio-focused model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support image analysis.[/yellow]"
-            )
-        return ""
-
-    def describe_video(self, video_path: Path) -> str:
-        """Not supported by this audio-focused model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support video analysis.[/yellow]"
-            )
-        return ""
-
-    def synthesize_summary(self, prompt: str) -> str:
-        """Not supported, as the model is designed for audio inputs."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' is audio-focused and does not support text-only summary synthesis.[/yellow]"
-            )
-        return ""

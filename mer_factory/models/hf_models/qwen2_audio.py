@@ -1,6 +1,7 @@
 import torch
 from pathlib import Path
 from rich.console import Console
+from .base import BaseHFModel
 import librosa
 from transformers import Qwen2AudioForConditionalGeneration, AutoProcessor
 from typing import List, Dict, Any
@@ -8,7 +9,7 @@ from typing import List, Dict, Any
 console = Console(stderr=True)
 
 
-class Qwen2AudioModel:
+class Qwen2AudioModel(BaseHFModel):
     """
     A wrapper for the Qwen2-Audio instruct model from Hugging Face, which is
     specialized for conversational AI tasks involving audio.
@@ -22,8 +23,7 @@ class Qwen2AudioModel:
             model_id (str): The ID of the Hugging Face model to load (e.g., 'Qwen/Qwen2-Audio-7B-Instruct').
             verbose (bool): Whether to print verbose logs.
         """
-        self.model_id = model_id
-        self.verbose = verbose
+        super().__init__(model_id=model_id, verbose=verbose)
         self.processor = None
         self.model = None
         self._initialize_pipeline()
@@ -103,22 +103,6 @@ class Qwen2AudioModel:
             )
             return f""
 
-    def describe_facial_expression(self, au_text: str) -> str:
-        """Not supported by this model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support facial expression analysis.[/yellow]"
-            )
-        return ""
-
-    def describe_image(self, image_path: Path) -> str:
-        """Not supported by this model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support image analysis.[/yellow]"
-            )
-        return ""
-
     def analyze_audio(self, audio_path: Path, prompt: str) -> dict:
         """
         Analyzes an audio file to produce a transcript using the conversational model.
@@ -139,14 +123,6 @@ class Qwen2AudioModel:
 
         str_response = self._run_generation(conversation)
         return str_response
-
-    def describe_video(self, video_path: Path) -> str:
-        """Not supported by this model."""
-        if self.verbose:
-            console.log(
-                f"[yellow]Model '{self.model_id}' does not support video analysis.[/yellow]"
-            )
-        return ""
 
     def synthesize_summary(self, prompt: str) -> str:
         """Synthesizes a final summary from a text prompt."""

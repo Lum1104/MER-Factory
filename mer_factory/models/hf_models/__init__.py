@@ -10,6 +10,8 @@ HUGGINGFACE_MODEL_REGISTRY = {
     "zhifeixie/Audio-Reasoner": (".audio_reasoner", "AudioReasonerModel"),
     "Qwen/Qwen2.5-Omni-7B": (".qwen2_5_omni", "Qwen2_5OmniModel"),
     "Qwen/Qwen2.5-Omni-3B": (".qwen2_5_omni", "Qwen2_5OmniModel"),
+    "openai/whisper-base": (".whisper", "WhisperModel"),
+    "openai/whisper-small": (".whisper", "WhisperModel"),
 }
 
 
@@ -30,7 +32,9 @@ def get_hf_model_class(model_id: str) -> Type:
     Raises:
         ValueError: If the given model ID is not in the registry.
     """
-    registry_entry = HUGGINGFACE_MODEL_REGISTRY.get(model_id)
+    # if passed in the local path str, extract the model id
+    real_model_id = model_id.split("/")[-2:]
+    registry_entry = HUGGINGFACE_MODEL_REGISTRY.get(real_model_id)
     if not registry_entry:
         raise ValueError(
             f"Unsupported Hugging Face model ID: '{model_id}'. "
