@@ -6,9 +6,6 @@
 <br>
 
 <p align="center">
-  <strong>您的多模态情感识别与推理（MERR）数据集自动化工厂。</strong>
-</p>
-<p align="center">
   <a href="https://lum1104.github.io/MER-Factory/" target="_blank">📖 项目文档</a>
 </p>
 
@@ -20,11 +17,12 @@
   </a>
  </p>
 
-<!-- <p align="center">
-  <a href="https://lum1104.github.io/MER-Factory/">
-    <img src="https://svg-banners.vercel.app/api?type=origin&text1=MER-Factory%20🧰&text2=✨%20多模态情绪识别推理%20(MERR)%20数据集工厂&width=800&height=200" alt="MER-Factory Banner">
-  </a>
-</p> -->
+> [!IMPORTANT]
+> ✍️ 挑战：多模态情感计算并非一步到位——而是一条支离破碎的流水线。从原始文件到训练模型，过程中充斥着繁琐的数据预处理、缓慢且不一致的人工标注，以及复杂的训练环境搭建。
+> 
+> 🏭 MER-Factory：将这整条工作流统一为一座“工厂”。我们自动化完成预处理与标注，生成高质量、带推理的样本数据，并直接衔接到模型训练。
+> 
+> 🚀 别再来回切换不同工具：让我们的工厂替你完成重活，你只需专注于研究。
 
 ## 🚀 项目路线图
 
@@ -42,6 +40,7 @@ MER-Factory 正在积极开发中，新功能会定期添加 - 查看我们的[�
 - [使用方法](#使用方法)
   - [基本命令结构](#基本命令结构)
   - [示例](#示例)
+  - [Hugging Face 客户端-服务端架构](#hugging-face-客户端-服务端架构)
   - [命令行选项](#命令行选项)
   - [处理类型](#处理类型)
 - [模型支持](#模型支持)
@@ -53,72 +52,17 @@ MER-Factory 正在积极开发中，新功能会定期添加 - 查看我们的[�
 <details>
 <summary>点击展开/折叠</summary>
 
-```mermaid
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        setup_paths(setup_paths)
-        handle_error(handle_error)
-        run_au_extraction(run_au_extraction)
-        save_au_results(save_au_results)
-        generate_audio_description(generate_audio_description)
-        save_audio_results(save_audio_results)
-        generate_video_description(generate_video_description)
-        save_video_results(save_video_results)
-        extract_full_features(extract_full_features)
-        filter_by_emotion(filter_by_emotion)
-        find_peak_frame(find_peak_frame)
-        generate_peak_frame_visual_description(generate_peak_frame_visual_description)
-        generate_peak_frame_au_description(generate_peak_frame_au_description)
-        synthesize_summary(synthesize_summary)
-        save_mer_results(save_mer_results)
-        run_image_analysis(run_image_analysis)
-        synthesize_image_summary(synthesize_image_summary)
-        save_image_results(save_image_results)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> setup_paths;
-        extract_full_features --> filter_by_emotion;
-        filter_by_emotion -.-> find_peak_frame;
-        filter_by_emotion -.-> handle_error;
-        filter_by_emotion -.-> save_au_results;
-        find_peak_frame --> generate_audio_description;
-        generate_audio_description -.-> generate_video_description;
-        generate_audio_description -.-> handle_error;
-        generate_audio_description -.-> save_audio_results;
-        generate_peak_frame_au_description --> synthesize_summary;
-        generate_peak_frame_visual_description --> generate_peak_frame_au_description;
-        generate_video_description -.-> generate_peak_frame_visual_description;
-        generate_video_description -.-> handle_error;
-        generate_video_description -.-> save_video_results;
-        run_au_extraction --> filter_by_emotion;
-        run_image_analysis --> synthesize_image_summary;
-        setup_paths -. &nbsp;full_pipeline&nbsp; .-> extract_full_features;
-        setup_paths -. &nbsp;audio_pipeline&nbsp; .-> generate_audio_description;
-        setup_paths -. &nbsp;video_pipeline&nbsp; .-> generate_video_description;
-        setup_paths -.-> handle_error;
-        setup_paths -. &nbsp;au_pipeline&nbsp; .-> run_au_extraction;
-        setup_paths -. &nbsp;image_pipeline&nbsp; .-> run_image_analysis;
-        synthesize_image_summary --> save_image_results;
-        synthesize_summary --> save_mer_results;
-        handle_error --> __end__;
-        save_au_results --> __end__;
-        save_audio_results --> __end__;
-        save_image_results --> __end__;
-        save_mer_results --> __end__;
-        save_video_results --> __end__;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
+暂时移除，可调用 `graph.py` 中的 `print(app.get_graph().draw_mermaid())` 查看
 
 </details>
 
 ## 特性
 
--   **动作单元（AU）处理流程**：提取面部动作单元（AUs），并将其翻译成描述性的自然语言。
--   **音频分析处理流程**：提取音频，转录语音，并进行详细的音调分析。
--   **视频分析处理流程**：生成视频内容和上下文的全面描述。
--   **图像分析处理流程**：为静态图像提供端到端的情感识别，包括视觉描述和情感合成。
--   **完整 MER 处理流程**：端到端的多模态处理流程，识别情感峰值时刻，分析所有模态（视觉、音频、面部），并合成一个整体的情感推理总结。
+-   **动作单元（AU）流程**：提取面部动作单元（AUs），并转化为描述性自然语言。
+-   **音频分析流程**：提取音频、转录语音，并进行详细语音语调分析。
+-   **视频分析流程**：生成视频内容与上下文的全面描述。
+-   **图像分析流程**：为静态图像提供端到端情感识别，包含视觉描述与情感综合。
+-   **完整 MER 流程**：端到端多模态流程，定位情感峰值时刻，分析所有模态（视觉、音频、面部），并综合生成整体情感推理总结。
 
 查看示例输出：
 -   [llava-llama3_llama3.2_merr_data.json](examples/llava-llama3_llama3.2_merr_data.json)
@@ -127,7 +71,7 @@ graph TD;
 ## 安装
 
 <p align="center">
-  📚 请访问 <a href="https://lum1104.github.io/MER-Factory/zh/" target="_blank">项目文档</a> 查看详细的安装和使用教程。
+  📚 请访问 <a href="https://lum1104.github.io/MER-Factory/zh/" target="_blank">项目文档</a> 查看详细安装与使用说明。
 </p>
 
 ## 使用方法
@@ -163,13 +107,28 @@ python main.py ./images ./output --type MER
 
 注意：如果需要使用 Ollama 模型，请运行 `ollama pull llama3.2` 等命令预先下载模型。Ollama 目前不支持视频分析。
 
+### Hugging Face 客户端-服务端架构
+
+当使用 `--huggingface-model` 指定 HF 模型时，MER-Factory 会通过一个轻量客户端转发调用至本地/远端的 API Server（实际承载 HF 模型）。这样可保持主环境整洁并便于扩缩容。
+
+1) 启动 HF API Server（单独终端中）：
+
+```bash
+# 示例：在 7860 端口提供 Whisper base
+python -m mer_factory.models.hf_api_server --model_id openai/whisper-base --host 0.0.0.0 --port 7860
+```
+
+2) 像往常一样运行 MER-Factory，并通过 ID 选择 HF 模型：
+
+```bash
+python main.py path_to_video/ output/ --type MER --huggingface-model openai/whisper-base --silent
+```
+
 ### 数据整理与超参数调优仪表板
 
-我们提供了一个交互式仪表板网页，用于简化数据整理和超参数调优过程。
+我们提供了交互式网页仪表板，便于数据整理与超参数调优。可测试不同提示词、保存与运行配置、并对生成数据进行评分。
 
-通过该仪表板，您可以方便地选择不同类型的模型、不同的预训练模型、任务类别，也可以根据您的需求更换提示词模板进行测试，支持一键式生成命令，并在仪表板直接运行 MER-Factory 以生成数据集，还可以对生成的数据进行评分。
-
-要启动仪表板，请使用以下命令：
+启动命令：
 
 ```bash
 python dashboard.py
@@ -244,7 +203,6 @@ python main.py video.mp4 output/
 ```bash
 python main.py video.mp4 output/ --task "Sentiment Analysis"
 ```
-
 
 ### 导出数据集
 
