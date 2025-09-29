@@ -48,8 +48,11 @@ MER-Factory is under active development with new features being added regularly 
   - [Hugging Face Client-Server Setup](#hugging-face-client-server-setup)
   - [Command Line Options](#command-line-options)
   - [Processing Types](#processing-types)
+  - [Export the Dataset](#export-the-dataset)
+  - [Evaluate the Results](#evaluate-the-results)
 - [Model Support](#model-support)
   - [Model Recommendations](#model-recommendations)
+- [Training](#training)
 - [Citation](#citation)
 
 
@@ -79,6 +82,14 @@ Check out example outputs here:
 <p align="center">
   📚 Please visit <a href="https://lum1104.github.io/MER-Factory/" target="_blank">project documentation</a> for detailed installation and usage instructions.
 </p>
+
+> [!Note]
+> For Windows users, simply download the pre-built ffmpeg and OpenFace and place them as requested.
+> 
+> We highly recommend serving the HF model/Ollama model on Linux and running MER-Factory on Windows to reduce installation time.
+
+But, for those love the command line (e.g., me), a complete installation example for Linux environments (including Google Colab) can be found at:
+- [`examples/MER_Factory.ipynb`](examples/MER_Factory.ipynb)
 
 ## Usage
 
@@ -223,6 +234,43 @@ python export.py --output_folder "{output_folder}" --file_type {file_type.lower(
 ```bash
 python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 ```
+
+### Evaluate the Results
+
+MER-Factory includes a comprehensive reference-free evaluation toolkit to assess the quality of generated annotations without human ratings.
+
+#### Basic Evaluation
+```bash
+# Evaluate all samples in output directory
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv
+```
+
+#### Advanced Evaluation Options
+```bash
+# Run with verbose output to see detailed failure reasons
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --verbose
+
+# Skip writing per-sample evaluation files
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
+```
+
+#### Evaluation Metrics
+The evaluation toolkit provides multiple quality metrics:
+
+- **🖼️ CLIP Image Score**: Visual grounding between images and descriptions
+- **🔊 CLAP Audio Score**: Audio-text alignment using LAION-CLAP
+- **😊 AU F1 Score**: Facial expression accuracy vs OpenFace AUs
+- **🔗 NLI Consistency**: Logical consistency across modalities
+- **🎙️ ASR WER**: Speech recognition quality vs Whisper baseline
+- **📝 Text Quality**: Distinctness, repetition, and readability metrics
+- **🎯 Composite Score**: Overall quality (0-100) combining all metrics
+
+#### Evaluation Output
+- **Per-sample**: `evaluation.json` files in each sample directory
+- **Dataset-level**: `evaluation_summary.csv` with rankings and statistics
+- **Console**: Beautiful progress bars and top-performing samples table
+
+For detailed evaluation documentation, see [`tools/evaluate/README.md`](tools/evaluate/README.md).
 
 ## Model Support
 

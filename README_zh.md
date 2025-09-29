@@ -18,11 +18,11 @@
  </p>
 
 > [!IMPORTANT]
-> ✍️ 挑战：多模态情感计算并非一步到位——而是一条支离破碎的流水线。从原始文件到训练模型，过程中充斥着繁琐的数据预处理、缓慢且不一致的人工标注，以及复杂的训练环境搭建。
+> ✍️ **挑战：**多模态情感计算并非一步到位——而是一条支离破碎的流水线。从原始文件到训练模型，过程中充斥着繁琐的数据预处理、缓慢且不一致的人工标注，以及复杂的训练环境搭建。
 > 
-> 🏭 MER-Factory：将这整条工作流统一为一座“工厂”。我们自动化完成预处理与标注，生成高质量、带推理的样本数据，并直接衔接到模型训练。
+> 🏭 **MER-Factory：**将这整条工作流统一为一座“工厂”。我们自动化完成预处理与标注，生成高质量、带推理的样本数据，并直接衔接到模型训练。
 > 
-> 🚀 别再来回切换不同工具：让我们的工厂替你完成重活，你只需专注于研究。
+> 🚀 **别再来回切换不同工具：**让我们的工厂替你完成重活，你只需专注于研究。
 
 ## 🚀 项目路线图
 
@@ -43,8 +43,11 @@ MER-Factory 正在积极开发中，新功能会定期添加 - 查看我们的[�
   - [Hugging Face 客户端-服务端架构](#hugging-face-客户端-服务端架构)
   - [命令行选项](#命令行选项)
   - [处理类型](#处理类型)
+  - [导出数据集](#导出数据集)
+  - [评估结果](#评估结果)
 - [模型支持](#模型支持)
   - [模型推荐](#模型推荐)
+- [训练](#训练)
 - [引用](#引用)
 
 ## Pipeline 结构
@@ -69,6 +72,14 @@ MER-Factory 正在积极开发中，新功能会定期添加 - 查看我们的[�
 -   [gemini_merr.json](examples/gemini_merr.json)
 
 ## 安装
+
+> [!Note]
+> 对于 Windows 用户，只需下载预构建的 ffmpeg 和 OpenFace 并按要求放置即可。
+> 
+> 我们强烈建议在 Linux 上运行 HF 模型/Ollama 模型，在 Windows 上运行 MER-Factory，以减少安装时间。
+
+对于喜欢命令行的用户（比如我），可以在以下位置找到 Linux 环境（包括 Google Colab）的完整安装示例：
+- [`examples/MER_Factory.ipynb`](examples/MER_Factory.ipynb)
 
 <p align="center">
   📚 请访问 <a href="https://lum1104.github.io/MER-Factory/zh/" target="_blank">项目文档</a> 查看详细安装与使用说明。
@@ -217,6 +228,43 @@ python export.py --output_folder "{output_folder}" --file_type {file_type.lower(
 ```bash
 python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 ```
+
+### 评估结果
+
+MER-Factory 包含了一个全面的无参考评估工具包，用于在无需人工评分的情况下评估生成标注的质量。
+
+#### 基础评估
+```bash
+# 评估输出目录中的所有样本
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv
+```
+
+#### 高级评估选项
+```bash
+# 运行详细输出模式，查看详细的失败原因
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --verbose
+
+# 跳过写入单个样本评估文件
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
+```
+
+#### 评估指标
+评估工具包提供多种质量指标：
+
+- **🖼️ CLIP 图像分数**：图像与描述之间的视觉匹配度
+- **🔊 CLAP 音频分数**：使用 LAION-CLAP 的音频-文本对齐度
+- **😊 AU F1 分数**：面部表情准确性对比 OpenFace AUs
+- **🔗 NLI 一致性**：跨模态逻辑一致性
+- **🎙️ ASR WER**：语音识别质量对比 Whisper 基线
+- **📝 文本质量**：差异性、重复性和可读性指标
+- **🎯 综合分数**：结合所有指标的整体质量（0-100）
+
+#### 评估输出
+- **单样本**：每个样本目录中的 `evaluation.json` 文件
+- **数据集级别**：包含排名和统计信息的 `evaluation_summary.csv`
+- **控制台**：美观的进度条和表现最佳样本表格
+
+详细评估文档请参见 [`tools/evaluate/README.md`](tools/evaluate/README.md)。
 
 ## 模型支持
 
