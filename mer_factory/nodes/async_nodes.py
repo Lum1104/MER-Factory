@@ -422,6 +422,7 @@ async def save_mer_results(state):
 
     result_data = {
         "source_path": str(Path(state["video_path"]).resolve(strict=False)),
+        "audio_path": str(Path(state["audio_path"]).resolve(strict=False)),
         "chronological_emotion_peaks": state.get("detected_emotions", []),
         "overall_peak_frame_info": state["peak_frame_info"],
         "coarse_descriptions_at_peak": descriptions,
