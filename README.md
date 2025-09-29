@@ -83,7 +83,12 @@ Check out example outputs here:
   📚 Please visit <a href="https://lum1104.github.io/MER-Factory/" target="_blank">project documentation</a> for detailed installation and usage instructions.
 </p>
 
-A complete installation example for Linux environments (including Google Colab) can be found at:
+> [!Note]
+> For Windows users, simply download the pre-built ffmpeg and OpenFace and place them as requested.
+> 
+> We highly recommend serving the HF model/Ollama model on Linux and running MER-Factory on Windows to reduce installation time.
+
+But, for those love the command line (e.g., me), a complete installation example for Linux environments (including Google Colab) can be found at:
 - [`examples/MER_Factory.ipynb`](examples/MER_Factory.ipynb)
 
 ## Usage
