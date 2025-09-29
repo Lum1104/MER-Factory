@@ -231,16 +231,16 @@ MER-Factory 包含了一个全面的无参考评估工具包，用于在无需�
 #### 基础评估
 ```bash
 # 评估输出目录中的所有样本
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv
 ```
 
 #### 高级评估选项
 ```bash
 # 运行详细输出模式，查看详细的失败原因
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv --verbose
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --verbose
 
 # 跳过写入单个样本评估文件
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
 ```
 
 #### 评估指标

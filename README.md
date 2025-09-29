@@ -237,16 +237,16 @@ MER-Factory includes a comprehensive reference-free evaluation toolkit to assess
 #### Basic Evaluation
 ```bash
 # Evaluate all samples in output directory
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv
 ```
 
 #### Advanced Evaluation Options
 ```bash
 # Run with verbose output to see detailed failure reasons
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv --verbose
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --verbose
 
 # Skip writing per-sample evaluation files
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --no-write-per-sample
 ```
 
 #### Evaluation Metrics

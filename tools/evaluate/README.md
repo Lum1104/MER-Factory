@@ -15,17 +15,17 @@ A comprehensive reference-free evaluation toolkit for MER-Factory outputs. This 
 
 ### Basic Usage
 ```bash
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv
 ```
 
 ### With Verbose Output
 ```bash
-python tools/evaluate.py run output/ --export-csv output/evaluation_summary.csv --verbose
+python tools/evaluate.py output/ --export-csv output/evaluation_summary.csv --verbose
 ```
 
 ### Advanced Options
 ```bash
-python tools/evaluate.py run output/ \
+python tools/evaluate.py output/ \
     --export-csv output/evaluation_summary.csv \
     --write-per-sample \
     --verbose
