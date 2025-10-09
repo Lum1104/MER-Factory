@@ -16,7 +16,6 @@ open_clip_torch
 ultralytics
 laion-clap
 opencv-python
-faster-whisper
 flask
 rich
 python-dotenv

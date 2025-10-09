@@ -174,33 +174,28 @@ def compute_asr_wer(reference_transcript: Optional[str], audio_path: Optional[st
     try:
         # Use provided model or initialize new one
         if whisper_model is None:
-            # Prefer faster-whisper if available
+            # Initialize HuggingFace pipeline on-the-fly
             try:
-                from faster_whisper import WhisperModel  # type: ignore
-                model = WhisperModel("base")  # Use smaller model for faster processing
-                segments, _ = model.transcribe(audio_path, language="zh")  # Specify Chinese language
-                asr_text = " ".join(s.text.strip() for s in segments if s.text.strip())
+                from transformers import pipeline
+                import torch
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                pipe = pipeline(
+                    "automatic-speech-recognition",
+                    model="openai/whisper-base",
+                    device=device
+                )
+                result = pipe(audio_path)
+                asr_text = result["text"] if isinstance(result, dict) else str(result)
             except Exception:
-                try:
-                    import whisper  # type: ignore
-                    model = whisper.load_model("base")  # Use smaller model
-                    res = model.transcribe(audio_path, language="zh")
-                    asr_text = res.get("text", "").strip()
-                except Exception:
-                    # If Whisper fails, return neutral score
-                    return 0.0
+                # If Whisper fails, return neutral score
+                return 0.0
         else:
-            # Use provided model - assume it's faster-whisper format
+            # Use provided HuggingFace pipeline model
             try:
-                segments, _ = whisper_model.transcribe(audio_path, language="zh")
-                asr_text = " ".join(s.text.strip() for s in segments if s.text.strip())
+                result = whisper_model(audio_path)
+                asr_text = result["text"] if isinstance(result, dict) else str(result)
             except Exception:
-                # Fallback to standard whisper format
-                try:
-                    res = whisper_model.transcribe(audio_path, language="zh")
-                    asr_text = res.get("text", "").strip()
-                except Exception:
-                    return 0.0
+                return 0.0
 
         if not asr_text:
             return 0.0

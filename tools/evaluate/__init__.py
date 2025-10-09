@@ -22,21 +22,21 @@ from .metrics_grounding import (
     compute_asr_wer,
 )
 from .aggregator import aggregate_sample_metrics
+import torch
 
 # Add model initialization helper
 def initialize_models():
     """Initialize all models once for efficient batch evaluation."""
     models = {}
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     
     # Initialize CLIP models
     print("Loading CLIP model...")
     try:
         import open_clip
-        import torch
         model, _, preprocess = open_clip.create_model_and_transforms("ViT-B-32", pretrained="laion2b_s34b_b79k")
         tokenizer = open_clip.get_tokenizer("ViT-B-32")
         model.eval()
-        device = "cuda" if torch.cuda.is_available() else "cpu"
         model.to(device)
         models['clip'] = {
             'model': model,
@@ -52,10 +52,8 @@ def initialize_models():
     print("Loading CLAP model...")
     try:
         import laion_clap
-        import torch
         model = laion_clap.CLAP_Module(enable_fusion=False, amodel="HTSAT-base")
         model.eval()
-        device = "cuda" if torch.cuda.is_available() else "cpu"
         model.to(device)
         models['clap'] = model
         print(f"✓ CLAP model loaded on {device}")
@@ -67,12 +65,10 @@ def initialize_models():
     print("Loading NLI model...")
     try:
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
-        import torch
         model_name = "microsoft/deberta-large-mnli"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForSequenceClassification.from_pretrained(model_name)
         model.eval()
-        device = "cuda" if torch.cuda.is_available() else "cpu"
         model.to(device)
         models['nli'] = {
             'model': model,
@@ -83,13 +79,17 @@ def initialize_models():
         models['nli'] = None
         print(f"✗ NLI model failed to load: {e}")
     
-    # Initialize Whisper model (use smaller model for better performance)
+    # Initialize Whisper model using HuggingFace pipeline
     print("Loading Whisper model...")
     try:
-        from faster_whisper import WhisperModel
-        model = WhisperModel("base")  # Use base model instead of large-v3 for speed
-        models['whisper'] = model
-        print("✓ Whisper model loaded")
+        from transformers import pipeline
+        pipe = pipeline(
+            "automatic-speech-recognition",
+            model="openai/whisper-base",
+            device=device
+        )
+        models['whisper'] = pipe
+        print(f"✓ Whisper model loaded on {device}")
     except Exception as e:
         models['whisper'] = None
         print(f"✗ Whisper model failed to load: {e}")
@@ -109,5 +109,3 @@ __all__ = [
     "aggregate_sample_metrics",
     "initialize_models",
 ]
-
-

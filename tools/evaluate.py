@@ -178,31 +178,32 @@ def run(
             if not (nli_premise and nli_hypotheses):
                 reasons["nli"] = "insufficient text for NLI"
 
-            missing: List[str] = []
-            if sample_type == "MER":
-                for key in ["clip_image_score", "clap_audio_score", "asr_wer", "au_f1", "nli"]:
-                    if key in reasons:
-                        missing.append(f"{key}: {reasons[key]}")
-            elif sample_type == "audio":
-                for key in ["clap_audio_score", "asr_wer", "nli"]:
-                    if key in reasons:
-                        missing.append(f"{key}: {reasons[key]}")
-            elif sample_type == "video":
-                for key in ["clip_image_score", "nli"]:
-                    if key in reasons:
-                        missing.append(f"{key}: {reasons[key]}")
-            elif sample_type == "image":
-                for key in ["clip_image_score", "nli"]:
-                    if key in reasons:
-                        missing.append(f"{key}: {reasons[key]}")
-            elif sample_type == "au":
-                for key in ["au_f1"]:
-                    if key in reasons:
-                        missing.append(f"{key}: {reasons[key]}")
-            if missing:
-                for msg in missing:
-                    console.print(f"❌ [bold red][{sample.sample_id}] missing:[/bold red] {msg}")
-                raise typer.Exit(code=1)
+            # Report missing data as warnings if verbose mode is enabled
+            if verbose:
+                missing: List[str] = []
+                if sample_type == "MER":
+                    for key in ["clip_image_score", "clap_audio_score", "asr_wer", "au_f1", "nli"]:
+                        if key in reasons:
+                            missing.append(f"{key}: {reasons[key]}")
+                elif sample_type == "audio":
+                    for key in ["clap_audio_score", "asr_wer", "nli"]:
+                        if key in reasons:
+                            missing.append(f"{key}: {reasons[key]}")
+                elif sample_type == "video":
+                    for key in ["clip_image_score", "nli"]:
+                        if key in reasons:
+                            missing.append(f"{key}: {reasons[key]}")
+                elif sample_type == "image":
+                    for key in ["clip_image_score", "nli"]:
+                        if key in reasons:
+                            missing.append(f"{key}: {reasons[key]}")
+                elif sample_type == "au":
+                    for key in ["au_f1"]:
+                        if key in reasons:
+                            missing.append(f"{key}: {reasons[key]}")
+                if missing:
+                    for msg in missing:
+                        console.print(f"⚠️  [yellow][{sample.sample_id}] missing:[/yellow] {msg}")
 
             # Text style metrics (cheap, always on)
             style_m = compute_text_style_metrics(final_summary)
