@@ -47,8 +47,8 @@ def _looks_like_au_json(p: Path) -> bool:
 
 def find_samples(root: Path) -> Iterator[SampleArtifactPaths]:
     for sample_dir in sorted([d for d in root.iterdir() if d.is_dir()]):
-        # ignore the error_logs folder
-        if "error_logs" in sample_dir.name:
+        # ignore the error_logs and .llm_cache folders
+        if "error_logs" in sample_dir.name or ".llm_cache" in sample_dir.name:
             continue
         # Try to discover artifacts by simple naming conventions
         mer_json = None

@@ -49,6 +49,7 @@ def run(
     export_csv: Optional[str] = typer.Option(None, help="Path to write evaluation_summary.csv"),
     write_per_sample: bool = typer.Option(True, help="Write evaluation.json in each sample folder"),
     verbose: bool = typer.Option(False, help="Print reasons when metrics are 0 due to missing deps/artifacts/text"),
+    filter_type: Optional[str] = typer.Option("mer", "--type", help="Filter by sample type: mer, audio, video, image, au, or 'all' (default: mer)"),
 ):
     root = Path(output_root)
     rows: List[Dict] = []
@@ -68,9 +69,29 @@ def run(
     initialized_models = [k for k, v in models.items() if v is not None]
     console.print(f"✅ [bold green]Models initialized:[/bold green] {initialized_models}")
 
-    # Get all samples first to show progress
-    samples = list(find_samples(root))
-    console.print(f"📊 [bold yellow]Found {len(samples)} samples to evaluate[/bold yellow]")
+    # Get all samples first
+    all_samples = list(find_samples(root))
+    
+    # Normalize and validate filter_type
+    if filter_type:
+        filter_type = filter_type.lower()
+        valid_types = ["mer", "audio", "video", "image", "au", "all"]
+        if filter_type not in valid_types:
+            console.print(f"❌ [bold red]Invalid type:[/bold red] '{filter_type}'. Must be one of: {', '.join(valid_types)}", style="red")
+            raise typer.Exit(code=1)
+    
+    # Filter samples by type if specified
+    if filter_type and filter_type != "all":
+        samples = [s for s in all_samples if _detect_sample_type(s).lower() == filter_type]
+        console.print(f"📊 [bold yellow]Found {len(samples)} {filter_type.upper()} samples to evaluate[/bold yellow] (filtered from {len(all_samples)} total)")
+    else:
+        samples = all_samples
+        console.print(f"📊 [bold yellow]Found {len(samples)} samples to evaluate[/bold yellow]")
+    
+    # Exit if no samples found
+    if not samples:
+        console.print("⚠️ [bold yellow]No samples found matching the criteria[/bold yellow]")
+        return
     
     # Process samples with beautiful progress bar
     with Progress(
@@ -100,9 +121,13 @@ def run(
 
             # Extract fields used for metrics
             final_summary = mer.get("final_summary", "")
-            peak_frame_visual_description = mer.get("coarse_descriptions_at_peak", "").get("visual_objective", "") or mer.get("image_visual_description", "")
-            video_description = mer.get("coarse_descriptions_at_peak", "").get("video_content", "") or mer.get("llm_video_summary", "")
-            audio_desc = (mer.get("coarse_descriptions_at_peak", {}) or {}).get("audio_analysis", "")
+            coarse_desc = mer.get("coarse_descriptions_at_peak", {}) or {}
+            
+            # Safely extract descriptions (coarse_descriptions_at_peak only exists for MER samples)
+            peak_frame_visual_description = coarse_desc.get("visual_objective", "") or mer.get("image_visual_description", "")
+            video_description = coarse_desc.get("video_content", "") or mer.get("llm_video_summary", "")
+            audio_desc = coarse_desc.get("audio_analysis", "")
+            
             # Extract transcript from audio_analysis (first line before \n)
             transcript = audio_desc.split('\n')[0] if audio_desc else ""
             detected = mer.get("detected_emotions") or [] # ignore now, but maybe useful for samples with GT label.
@@ -112,15 +137,8 @@ def run(
                 mer.get("peak_frame_au_description", "")
                 or mer.get("llm_au_description", "")
                 or mer.get("au_text_description", "")
-                or (mer.get("coarse_descriptions_at_peak", {}) or {}).get("visual_expression", "")
+                or coarse_desc.get("visual_expression", "")
             )
-            # Extract coarse unimodal descriptions when standard fields are empty
-            if not video_description:
-                video_description = (mer.get("coarse_descriptions_at_peak", {}) or {}).get("video_content", "")
-            if not audio_desc:
-                audio_desc = (mer.get("coarse_descriptions_at_peak", {}) or {}).get("audio_analysis", "")
-            if not peak_frame_visual_description:
-                peak_frame_visual_description = (mer.get("coarse_descriptions_at_peak", {}) or {}).get("visual_objective", "")
 
             # Detect type
             sample_type = _detect_sample_type(sample)
@@ -298,7 +316,10 @@ def run(
     available_columns = [col for col in key_columns if col in df.columns]
     
     # Create a rich table for the summary
-    table = Table(title="🏆 Top Performing Samples", show_header=True, header_style="bold magenta")
+    table_title = "🏆 Top Performing Samples"
+    if filter_type and filter_type != "all":
+        table_title = f"🏆 Top Performing {filter_type.upper()} Samples"
+    table = Table(title=table_title, show_header=True, header_style="bold magenta")
     
     # Add columns with custom styling
     for col in available_columns:
