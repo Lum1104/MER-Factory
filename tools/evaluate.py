@@ -43,6 +43,50 @@ def _detect_sample_type(sample) -> str:
     return "unknown"
 
 
+def _prepare_sample_data(sample):
+    """Extract and prepare data from a sample for evaluation."""
+    # Load available analysis JSON (prefer MER, else audio/video/image/AU)
+    mer = {}
+    candidate = sample.mer_json or sample.audio_json or sample.video_json or sample.image_json or sample.au_json
+    if candidate and candidate.exists():
+        try:
+            mer = load_mer_output(candidate)
+        except Exception:
+            mer = {}
+
+    # Extract fields used for metrics
+    final_summary = mer.get("final_summary", "")
+    coarse_desc = mer.get("coarse_descriptions_at_peak", {}) or {}
+    
+    # Safely extract descriptions
+    peak_frame_visual_description = coarse_desc.get("visual_objective", "") or mer.get("image_visual_description", "")
+    video_description = coarse_desc.get("video_content", "") or mer.get("llm_video_summary", "")
+    audio_desc = coarse_desc.get("audio_analysis", "")
+    
+    # Extract transcript from audio_analysis (first line before \n)
+    transcript = audio_desc.split('\n')[0] if audio_desc else ""
+    peak_info = mer.get("overall_peak_frame_info") or {}
+    peak_frame_index = peak_info.get("frame_number")
+    peak_frame_au_text = (
+        mer.get("peak_frame_au_description", "")
+        or mer.get("llm_au_description", "")
+        or mer.get("au_text_description", "")
+        or coarse_desc.get("visual_expression", "")
+    )
+
+    return {
+        'mer': mer,
+        'final_summary': final_summary,
+        'peak_frame_visual_description': peak_frame_visual_description,
+        'video_description': video_description,
+        'audio_desc': audio_desc,
+        'transcript': transcript,
+        'peak_info': peak_info,
+        'peak_frame_index': peak_frame_index,
+        'peak_frame_au_text': peak_frame_au_text,
+    }
+
+
 @app.command()
 def run(
     output_root: str = typer.Argument(..., help="Path to output directory containing per-sample folders"),
@@ -50,6 +94,7 @@ def run(
     write_per_sample: bool = typer.Option(True, help="Write evaluation.json in each sample folder"),
     verbose: bool = typer.Option(False, help="Print reasons when metrics are 0 due to missing deps/artifacts/text"),
     filter_type: Optional[str] = typer.Option("mer", "--type", help="Filter by sample type: mer, audio, video, image, au, or 'all' (default: mer)"),
+    batch_size: int = typer.Option(8, help="Batch size for model inference (default: 8, use 1 to disable batching)"),
 ):
     root = Path(output_root)
     rows: List[Dict] = []
@@ -93,6 +138,12 @@ def run(
         console.print("⚠️ [bold yellow]No samples found matching the criteria[/bold yellow]")
         return
     
+    # Show batch size info
+    if batch_size > 1:
+        console.print(f"⚡ [bold cyan]Batch inference enabled[/bold cyan] with batch size: {batch_size}")
+    else:
+        console.print(f"🔄 [yellow]Processing samples individually[/yellow]")
+    
     # Process samples with beautiful progress bar
     with Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -104,205 +155,219 @@ def run(
     ) as progress:
         task = progress.add_task("🔍 Processing samples", total=len(samples))
         
-        for i, sample in enumerate(samples, 1):
-            progress.update(task, description=f"🔍 Processing {sample.sample_id}")
+        # Process samples in batches
+        for batch_start in range(0, len(samples), batch_size):
+            batch_end = min(batch_start + batch_size, len(samples))
+            batch_samples = samples[batch_start:batch_end]
             
-            metrics: Dict[str, float] = {}
-            reasons: Dict[str, str] = {}
-
-            # Load available analysis JSON (prefer MER, else audio/video/image/AU)
-            mer = {}
-            candidate = sample.mer_json or sample.audio_json or sample.video_json or sample.image_json or sample.au_json
-            if candidate and candidate.exists():
-                try:
-                    mer = load_mer_output(candidate)
-                except Exception:
-                    mer = {}
-
-            # Extract fields used for metrics
-            final_summary = mer.get("final_summary", "")
-            coarse_desc = mer.get("coarse_descriptions_at_peak", {}) or {}
+            # Prepare data for all samples in batch
+            batch_data = []
+            for sample in batch_samples:
+                data = _prepare_sample_data(sample)
+                data['sample'] = sample
+                data['sample_type'] = _detect_sample_type(sample)
+                batch_data.append(data)
             
-            # Safely extract descriptions (coarse_descriptions_at_peak only exists for MER samples)
-            peak_frame_visual_description = coarse_desc.get("visual_objective", "") or mer.get("image_visual_description", "")
-            video_description = coarse_desc.get("video_content", "") or mer.get("llm_video_summary", "")
-            audio_desc = coarse_desc.get("audio_analysis", "")
+            # Collect batch inputs for model inference
+            clip_image_paths = []
+            clip_texts = []
+            clap_audio_paths = []
+            clap_texts = []
+            nli_premises = []
+            nli_hypotheses_list = []
+            asr_transcripts = []
+            asr_audio_paths = []
             
-            # Extract transcript from audio_analysis (first line before \n)
-            transcript = audio_desc.split('\n')[0] if audio_desc else ""
-            detected = mer.get("detected_emotions") or [] # ignore now, but maybe useful for samples with GT label.
-            peak_info = mer.get("overall_peak_frame_info") or {}
-            peak_frame_index = peak_info.get("frame_number")
-            peak_frame_au_text = (
-                mer.get("peak_frame_au_description", "")
-                or mer.get("llm_au_description", "")
-                or mer.get("au_text_description", "")
-                or coarse_desc.get("visual_expression", "")
-            )
-
-            # Detect type
-            sample_type = _detect_sample_type(sample)
-
-            # Pre-checks for artifacts/text
-            # CLIP
-            img_path = None
-            if getattr(sample, "peak_frame_image", None) and sample.peak_frame_image.exists():
-                img_path = str(sample.peak_frame_image)
-            if not img_path:
-                reasons["clip_image_score"] = "missing peak frame image"
-
-            # CLAP
-            if not getattr(sample, "audio_wav", None):
-                reasons["clap_audio_score"] = "missing wav"
-            elif not (transcript or audio_desc):
-                reasons["clap_audio_score"] = "missing transcript/audio_description"
-
-            # ASR WER (use transcript extracted from audio_analysis)
-            if not getattr(sample, "audio_wav", None):
-                reasons["asr_wer"] = "missing wav"
-            elif not transcript:
-                reasons["asr_wer"] = "missing transcript in audio_analysis"
-
-            # AU alignment (accept AU CSV or top_aus_intensities)
-            has_peak_intensities = bool(peak_info.get("top_aus_intensities"))
-            if not getattr(sample, "au_csv", None) and not has_peak_intensities:
-                reasons["au_f1"] = "missing AU CSV or top_aus_intensities"
-            elif peak_frame_index is None and not has_peak_intensities:
-                reasons["au_f1"] = "missing peak frame index"
-            elif not peak_frame_au_text:
-                reasons["au_f1"] = "missing AU text description"
-
-            # NLI
-            nli_premise = final_summary or video_description or audio_desc or peak_frame_au_text
-            nli_hypotheses = [t for t in [video_description, audio_desc, peak_frame_au_text] if t]
-            if not (nli_premise and nli_hypotheses):
-                reasons["nli"] = "insufficient text for NLI"
-
-            # Report missing data as warnings if verbose mode is enabled
-            if verbose:
-                missing: List[str] = []
-                if sample_type == "MER":
-                    for key in ["clip_image_score", "clap_audio_score", "asr_wer", "au_f1", "nli"]:
-                        if key in reasons:
-                            missing.append(f"{key}: {reasons[key]}")
-                elif sample_type == "audio":
-                    for key in ["clap_audio_score", "asr_wer", "nli"]:
-                        if key in reasons:
-                            missing.append(f"{key}: {reasons[key]}")
-                elif sample_type == "video":
-                    for key in ["clip_image_score", "nli"]:
-                        if key in reasons:
-                            missing.append(f"{key}: {reasons[key]}")
-                elif sample_type == "image":
-                    for key in ["clip_image_score", "nli"]:
-                        if key in reasons:
-                            missing.append(f"{key}: {reasons[key]}")
-                elif sample_type == "au":
-                    for key in ["au_f1"]:
-                        if key in reasons:
-                            missing.append(f"{key}: {reasons[key]}")
-                if missing:
-                    for msg in missing:
-                        console.print(f"⚠️  [yellow][{sample.sample_id}] missing:[/yellow] {msg}")
-
-            # Text style metrics (cheap, always on)
-            style_m = compute_text_style_metrics(final_summary)
-            metrics.update(style_m)
-
-            # AU alignment metrics (cheap)
-            au_m = compute_au_alignment_metrics(
-                str(sample.au_csv) if sample.au_csv else None,
-                peak_frame_index,
-                peak_frame_au_text,
-                peak_au_intensities=peak_info.get("top_aus_intensities"),
-            )
-            metrics.update(au_m)
-
-            # Grounding (using pre-initialized models)
+            for data in batch_data:
+                # CLIP inputs
+                img_path = None
+                if getattr(data['sample'], "peak_frame_image", None) and data['sample'].peak_frame_image.exists():
+                    img_path = str(data['sample'].peak_frame_image)
+                clip_image_paths.append(img_path)
+                clip_texts.append(
+                    (data['peak_frame_visual_description'] or data['video_description'] or data['final_summary']) or None
+                )
+                
+                # CLAP inputs
+                audio_path = str(data['sample'].audio_wav) if data['sample'].audio_wav else None
+                text = (data['transcript'] + " " + data['audio_desc']).strip() if (data['transcript'] or data['audio_desc']) else None
+                clap_audio_paths.append(audio_path)
+                clap_texts.append(text)
+                
+                # NLI inputs
+                premise = data['final_summary'] or data['video_description'] or data['audio_desc'] or data['peak_frame_au_text']
+                hypotheses = [t for t in [data['video_description'], data['audio_desc'], data['peak_frame_au_text']] if t]
+                nli_premises.append(premise)
+                nli_hypotheses_list.append(hypotheses)
+                
+                # ASR WER inputs
+                asr_transcripts.append(data['transcript'])
+                asr_audio_paths.append(str(data['sample'].audio_wav) if data['sample'].audio_wav else None)
+            
+            # Call unified functions (they handle batching internally)
             clip_models = models.get('clip')
             if clip_models:
-                metrics["clip_image_score"] = compute_clip_image_text_score(
-                    img_path,
-                    (peak_frame_visual_description or video_description or final_summary) or None,
+                clip_scores = compute_clip_image_text_score(
+                    clip_image_paths, clip_texts,
                     clip_model=clip_models['model'],
-                    clip_preprocess=clip_models['preprocess'], 
+                    clip_preprocess=clip_models['preprocess'],
                     clip_tokenizer=clip_models['tokenizer']
                 )
             else:
-                metrics["clip_image_score"] = compute_clip_image_text_score(
-                    img_path,
-                    (peak_frame_visual_description or video_description or final_summary) or None,
-                )
-                
+                clip_scores = [0.0] * len(batch_samples)
+            
             clap_model = models.get('clap')
-            metrics["clap_audio_score"] = compute_clap_audio_text_score(
-                str(sample.audio_wav) if sample.audio_wav else None,
-                (transcript + " " + audio_desc).strip() if (transcript or audio_desc) else None,
-                clap_model=clap_model
+            clap_scores = compute_clap_audio_text_score(
+                clap_audio_paths, clap_texts, clap_model=clap_model
             )
-
-            # NLI consistency between final summary and unimodal descriptions (or available fields)
+            
             nli_models = models.get('nli')
             if nli_models:
-                nli = compute_nli_consistency_scores(
-                    final_summary or video_description or audio_desc or peak_frame_au_text,
-                    [t for t in [video_description, audio_desc, peak_frame_au_text] if t],
+                nli_results = compute_nli_consistency_scores(
+                    nli_premises, nli_hypotheses_list,
                     nli_model=nli_models['model'],
                     nli_tokenizer=nli_models['tokenizer']
                 )
             else:
-                nli = compute_nli_consistency_scores(
-                    final_summary or video_description or audio_desc or peak_frame_au_text,
-                    [t for t in [video_description, audio_desc, peak_frame_au_text] if t],
-                )
-            metrics.update(nli)
-
-            # WER vs strong ASR (using pre-initialized model)
+                nli_results = [{"nli_consistency_score": 0.0, "nli_entail_rate": 0.0, "nli_contra_rate": 0.0}] * len(batch_samples)
+            
             whisper_model = models.get('whisper')
-            metrics["asr_wer"] = compute_asr_wer(
-                transcript, 
-                str(sample.audio_wav) if sample.audio_wav else None,
-                whisper_model=whisper_model
+            asr_wer_scores = compute_asr_wer(
+                asr_transcripts, asr_audio_paths, whisper_model=whisper_model
             )
-
-            # Normalize CLIP and CLAP scores for consistent 0-1 range in saved metrics
-            if "clip_image_score" in metrics:
-                raw_clip = metrics["clip_image_score"]
-                metrics["clip_image_score"] = max(0.0, (raw_clip + 1.0) / 2.0)
             
-            if "clap_audio_score" in metrics:
-                raw_clap = metrics["clap_audio_score"]
-                metrics["clap_audio_score"] = max(0.0, (raw_clap + 1.0) / 2.0)
+            # Process results for each sample in batch
+            for idx, (data, clip_score, clap_score, nli_result, asr_wer) in enumerate(
+                zip(batch_data, clip_scores, clap_scores, nli_results, asr_wer_scores)
+            ):
+                sample = data['sample']
+                sample_type = data['sample_type']
+                final_summary = data['final_summary']
+                peak_frame_au_text = data['peak_frame_au_text']
+                peak_info = data['peak_info']
+                peak_frame_index = data['peak_frame_index']
+                transcript = data['transcript']
+                audio_desc = data['audio_desc']
+                video_description = data['video_description']
+                
+                progress.update(task, description=f"🔍 Processing {sample.sample_id}")
+                
+                metrics: Dict[str, float] = {}
+                reasons: Dict[str, str] = {}
 
-            # Composite score
-            metrics["composite_score"] = aggregate_sample_metrics(metrics)
+                # Pre-checks for artifacts/text (for verbose reporting)
+                img_path = None
+                if getattr(sample, "peak_frame_image", None) and sample.peak_frame_image.exists():
+                    img_path = str(sample.peak_frame_image)
+                if not img_path:
+                    reasons["clip_image_score"] = "missing peak frame image"
 
-            if verbose:
-                def _report(name: str, value: float):
-                    if (value == 0.0) and (name in reasons):
-                        console.print(f"ℹ️ [yellow][{sample.sample_id}] {name} -> 0.0 because:[/yellow] {reasons[name]}")
-                    # CLAP score is now already normalized to 0-1 range
+                if not getattr(sample, "audio_wav", None):
+                    reasons["clap_audio_score"] = "missing wav"
+                elif not (transcript or audio_desc):
+                    reasons["clap_audio_score"] = "missing transcript/audio_description"
 
-                _report("clip_image_score", metrics.get("clip_image_score", 0.0))
-                _report("clap_audio_score", metrics.get("clap_audio_score", 0.0))
-                _report("asr_wer", metrics.get("asr_wer", 0.0))
-                _report("au_f1", metrics.get("au_f1", 0.0))
-                if metrics.get("nli_entail_rate", 0.0) == 0.0 and "nli" in reasons:
-                    console.print(f"ℹ️ [yellow][{sample.sample_id}] nli -> 0.0 because:[/yellow] {reasons['nli']}")
-  
-            # Persist per-sample
-            if write_per_sample:
-                try:
-                    with (sample.sample_dir / "evaluation.json").open("w", encoding="utf-8") as f:
-                        json.dump(metrics, f, indent=2)
-                except Exception:
-                    pass
+                if not getattr(sample, "audio_wav", None):
+                    reasons["asr_wer"] = "missing wav"
+                elif not transcript:
+                    reasons["asr_wer"] = "missing transcript in audio_analysis"
 
-            row = {"sample_id": sample.sample_id, **metrics}
-            rows.append(row)
-            
-            # Update progress
-            progress.advance(task)
+                has_peak_intensities = bool(peak_info.get("top_aus_intensities"))
+                if not getattr(sample, "au_csv", None) and not has_peak_intensities:
+                    reasons["au_f1"] = "missing AU CSV or top_aus_intensities"
+                elif peak_frame_index is None and not has_peak_intensities:
+                    reasons["au_f1"] = "missing peak frame index"
+                elif not peak_frame_au_text:
+                    reasons["au_f1"] = "missing AU text description"
+
+                nli_premise = final_summary or video_description or audio_desc or peak_frame_au_text
+                nli_hypotheses = [t for t in [video_description, audio_desc, peak_frame_au_text] if t]
+                if not (nli_premise and nli_hypotheses):
+                    reasons["nli"] = "insufficient text for NLI"
+
+                # Report missing data as warnings if verbose mode is enabled
+                if verbose:
+                    missing: List[str] = []
+                    if sample_type == "MER":
+                        for key in ["clip_image_score", "clap_audio_score", "asr_wer", "au_f1", "nli"]:
+                            if key in reasons:
+                                missing.append(f"{key}: {reasons[key]}")
+                    elif sample_type == "audio":
+                        for key in ["clap_audio_score", "asr_wer", "nli"]:
+                            if key in reasons:
+                                missing.append(f"{key}: {reasons[key]}")
+                    elif sample_type == "video":
+                        for key in ["clip_image_score", "nli"]:
+                            if key in reasons:
+                                missing.append(f"{key}: {reasons[key]}")
+                    elif sample_type == "image":
+                        for key in ["clip_image_score", "nli"]:
+                            if key in reasons:
+                                missing.append(f"{key}: {reasons[key]}")
+                    elif sample_type == "au":
+                        for key in ["au_f1"]:
+                            if key in reasons:
+                                missing.append(f"{key}: {reasons[key]}")
+                    if missing:
+                        for msg in missing:
+                            console.print(f"⚠️  [yellow][{sample.sample_id}] missing:[/yellow] {msg}")
+
+                # Text style metrics (cheap, always on)
+                style_m = compute_text_style_metrics(final_summary)
+                metrics.update(style_m)
+
+                # AU alignment metrics (cheap)
+                au_m = compute_au_alignment_metrics(
+                    str(sample.au_csv) if sample.au_csv else None,
+                    peak_frame_index,
+                    peak_frame_au_text,
+                    peak_au_intensities=peak_info.get("top_aus_intensities"),
+                )
+                metrics.update(au_m)
+
+                # Use batched inference results
+                metrics["clip_image_score"] = clip_score
+                metrics["clap_audio_score"] = clap_score
+                metrics.update(nli_result)
+                metrics["asr_wer"] = asr_wer
+
+                # Normalize CLIP and CLAP scores for consistent 0-1 range in saved metrics
+                if "clip_image_score" in metrics:
+                    raw_clip = metrics["clip_image_score"]
+                    metrics["clip_image_score"] = max(0.0, (raw_clip + 1.0) / 2.0)
+                
+                if "clap_audio_score" in metrics:
+                    raw_clap = metrics["clap_audio_score"]
+                    metrics["clap_audio_score"] = max(0.0, (raw_clap + 1.0) / 2.0)
+
+                # Composite score
+                metrics["composite_score"] = aggregate_sample_metrics(metrics)
+
+                if verbose:
+                    def _report(name: str, value: float):
+                        if (value == 0.0) and (name in reasons):
+                            console.print(f"ℹ️ [yellow][{sample.sample_id}] {name} -> 0.0 because:[/yellow] {reasons[name]}")
+
+                    _report("clip_image_score", metrics.get("clip_image_score", 0.0))
+                    _report("clap_audio_score", metrics.get("clap_audio_score", 0.0))
+                    _report("asr_wer", metrics.get("asr_wer", 0.0))
+                    _report("au_f1", metrics.get("au_f1", 0.0))
+                    if metrics.get("nli_entail_rate", 0.0) == 0.0 and "nli" in reasons:
+                        console.print(f"ℹ️ [yellow][{sample.sample_id}] nli -> 0.0 because:[/yellow] {reasons['nli']}")
+      
+                # Persist per-sample
+                if write_per_sample:
+                    try:
+                        with (sample.sample_dir / "evaluation.json").open("w", encoding="utf-8") as f:
+                            json.dump(metrics, f, indent=2)
+                    except Exception:
+                        pass
+
+                row = {"sample_id": sample.sample_id, **metrics}
+                rows.append(row)
+                
+                # Update progress
+                progress.advance(task)
 
     df = pd.DataFrame(rows).sort_values("composite_score", ascending=False)
     if export_csv:
