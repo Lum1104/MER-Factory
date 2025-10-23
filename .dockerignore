@@ -1,0 +1,52 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Output and temporary files
+output/
+*.mp4
+*.wmv
+*.wav
+*.avi
+*.mov
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+docs/
+README*.md
+
+# Test files
+test/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# LLaMA-Factory (if you don't need it in the image)
+LLaMA-Factory/
+
+# Examples (optional, comment out if you want to include them)
+examples/
+
