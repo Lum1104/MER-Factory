@@ -47,22 +47,21 @@ ffprobe -version
 ```
 
 ### 2. OpenFace 安装
+面部动作单元提取需要 [OpenFace](https://github.com/TadasBaltrusaitis/OpenFace/wiki)。
 
-面部动作单元提取需要 OpenFace。
+#### Mac/Linux 安装方式
 
-```bash
-# 克隆 OpenFace 仓库
-git clone https://github.com/TadasBaltrusaitis/OpenFace.git
-cd OpenFace
-
-# 遵循特定平台的构建说明
-# Windows 平台下载好以后需要运行 download_models.ps1 来自动下载需要的模型
-# 参见: https://github.com/TadasBaltrusaitis/OpenFace/wiki
-```
+[参考代码](https://github.com/Lum1104/MER-Factory/blob/main/examples/MER_Factory.ipynb)
 
 <div class="alert alert-info">
 <strong>注意：</strong> 构建 OpenFace 后，请记下 <code>FeatureExtraction</code> 可执行文件的路径（通常在 <code>build/bin/FeatureExtraction</code>）。您将在配置时需要它。
 </div>
+
+#### Windows 安装与配置指南
+1. 下载适用于 Windows 的[预编译版本](https://github.com/TadasBaltrusaitis/OpenFace/releases)。
+2. 在 Powershell 中运行`download_models.ps1`，如无法访问 Dropbox 则按照 [模型下载文档](https://github.com/TadasBaltrusaitis/OpenFace/wiki/Model-download)下载模型放置到 `model/patch_experts` 路径下
+3. 将 `FeatureExtraction.exe` 文件的**绝对路径**填入 `.env`
+
 
 ## 安装
 
