@@ -47,22 +47,20 @@ ffprobe -version
 ```
 
 ### 2. OpenFace Installation
+Facial Action Unit extraction requires [OpenFace](https://github.com/TadasBaltrusaitis/OpenFace/wiki).
 
-OpenFace is needed for facial Action Unit extraction.
+#### Mac/Linux Installation Method
 
-```bash
-# Clone OpenFace repository
-git clone https://github.com/TadasBaltrusaitis/OpenFace.git
-cd OpenFace
-
-# Follow platform-specific build instructions
-# For Windows install, make sure you run the download_models.ps1 to download the models.
-# See: https://github.com/TadasBaltrusaitis/OpenFace/wiki
-```
+[Reference Code](https://github.com/Lum1104/MER-Factory/blob/main/examples/MER_Factory.ipynb)
 
 <div class="alert alert-info">
-<strong>Note:</strong> After building OpenFace, note the path to the <code>FeatureExtraction</code> executable (typically in <code>build/bin/FeatureExtraction</code>). You'll need this for configuration.
+<strong>Note:</strong> After building OpenFace, please note down the path to the <code>FeatureExtraction</code> executable (usually in <code>build/bin/FeatureExtraction</code>). You will need it during configuration.
 </div>
+
+#### Windows Installation and Configuration Guide
+1. Download the [pre-compiled version](https://github.com/TadasBaltrusaitis/OpenFace/releases) for Windows.
+2. Run `download_models.ps1` in PowerShell. If you cannot access Dropbox, follow the [model download documentation](https://github.com/TadasBaltrusaitis/OpenFace/wiki/Model-download) to download the models and place them in the `model/patch_experts` path.
+3. Enter the **absolute path** of the `FeatureExtraction.exe` file into the `.env` file.
 
 ## Installation
 
