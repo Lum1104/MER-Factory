@@ -64,6 +64,12 @@ async def save_au_results(state):
 
 
 async def generate_audio_description(state):
+    # Skip if already passed (output exists) and no new prompt (not a retry target)
+    if state.get("audio_analysis_results") and not state.get("dynamic_prompts", {}).get("audio"):
+        if state.get("verbose", True):
+            console.log("[dim]Skipping Audio Analysis (already passed).[/dim]")
+        return {}
+
     # reuse existing audio analysis results if available
     if state.get("processing_type") == "MER" and state.get("cache"):
         output_path = (
@@ -97,12 +103,19 @@ async def generate_audio_description(state):
     processing_type = state.get("processing_type")
     ground_truth_label = state.get("ground_truth_label")
 
-    # if processing_type is audio we pass the label to the prompt
-    # otherwise (MER), we do not, because emotion cannot be inferred from audio alone.
-    has_label = bool(ground_truth_label) if processing_type == "audio" else False
-    prompt = prompts.get_audio_prompt(has_label)
-    if has_label:
-        prompt = prompt.format(label=ground_truth_label)
+    # Check for dynamic prompt from Gate Agent
+    dynamic_prompt = state.get("dynamic_prompts", {}).get("audio")
+    if dynamic_prompt:
+        prompt = dynamic_prompt
+        if verbose:
+            console.log("[yellow]Using dynamic prompt for Audio Analysis[/yellow]")
+    else:
+        # if processing_type is audio we pass the label to the prompt
+        # otherwise (MER), we do not, because emotion cannot be inferred from audio alone.
+        has_label = bool(ground_truth_label) if processing_type == "audio" else False
+        prompt = prompts.get_audio_prompt(has_label)
+        if has_label:
+            prompt = prompt.format(label=ground_truth_label)
 
     audio_analysis = await model.analyze_audio(audio_path, prompt)
     if verbose:
@@ -135,6 +148,11 @@ async def save_audio_results(state):
 
 
 async def generate_video_description(state):
+    # Skip if already passed (output exists) and no new prompt (not a retry target)
+    if state.get("video_description") and not state.get("dynamic_prompts", {}).get("video"):
+        if state.get("verbose", True):
+            console.log("[dim]Skipping Video Analysis (already passed).[/dim]")
+        return {}
     if state.get("processing_type") == "MER" and state.get("cache"):
         output_path = (
             Path(state["video_output_dir"]) / f"{state['video_id']}_video_analysis.json"
@@ -158,12 +176,19 @@ async def generate_video_description(state):
 
     processing_type = state.get("processing_type")
     ground_truth_label = state.get("ground_truth_label")
-    # if processing_type is video, we pass the label to the prompt
-    # otherwise (MER), we do not, because emotion cannot be inferred from video alone.
-    has_label = bool(ground_truth_label) if processing_type == "video" else False
-    prompt = prompts.get_video_prompt(has_label)
-    if has_label:
-        prompt = prompt.format(label=ground_truth_label)
+    # Check for dynamic prompt from Gate Agent
+    dynamic_prompt = state.get("dynamic_prompts", {}).get("video")
+    if dynamic_prompt:
+        prompt = dynamic_prompt
+        if verbose:
+            console.log("[yellow]Using dynamic prompt for Video Description[/yellow]")
+    else:
+        # if processing_type is video, we pass the label to the prompt
+        # otherwise (MER), we do not, because emotion cannot be inferred from video alone.
+        has_label = bool(ground_truth_label) if processing_type == "video" else False
+        prompt = prompts.get_video_prompt(has_label)
+        if has_label:
+            prompt = prompt.format(label=ground_truth_label)
 
     video_description = await model.describe_video(video_path, prompt)
     if verbose and video_description:
@@ -328,6 +353,11 @@ async def extract_peak_image(state):
 
 async def generate_peak_frame_visual_description(state):
     """Generates a visual description for the peak frame image."""
+    # Skip if already passed (output exists) and no new prompt (not a retry target)
+    if state.get("image_visual_description") and not state.get("dynamic_prompts", {}).get("peak_frame"):
+        if state.get("verbose", True):
+            console.log("[dim]Skipping Peak Frame Analysis (already passed).[/dim]")
+        return {}
     verbose = state.get("verbose", True)
     if verbose:
         console.log("Generating visual description for peak frame...")
@@ -335,13 +365,25 @@ async def generate_peak_frame_visual_description(state):
     prompts: PromptTemplates = state["prompts"]
     peak_frame_path = Path(state["peak_frame_path"])
 
-    # No label for peak frame, since this is use for MER.
-    prompt = prompts.get_image_prompt()
+    # Check for dynamic prompt from Gate Agent
+    dynamic_prompt = state.get("dynamic_prompts", {}).get("image")
+    if dynamic_prompt:
+        prompt = dynamic_prompt
+        if verbose:
+            console.log("[yellow]Using dynamic prompt for Peak Frame Visual Description[/yellow]")
+    else:
+        # No label for peak frame, since this is use for MER.
+        prompt = prompts.get_image_prompt()
+    
     visual_obj_desc = await model.describe_image(peak_frame_path, prompt)
 
     if verbose:
         console.log(f"Peak Frame Visual Description: [cyan]{visual_obj_desc}[/cyan]")
     return {"image_visual_description": visual_obj_desc}
+
+
+
+
 
 
 async def synthesize_summary(state):

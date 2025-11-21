@@ -73,7 +73,25 @@ def route_after_video_generation(state: MERRState) -> str:
     return "handle_error"
 
 
-def create_graph(use_sync_nodes: bool = False):
+def route_gate_agent(state: MERRState) -> str:
+    """Routes flow based on the Gate Agent's decision."""
+    if state.get("error"):
+        return "handle_error"
+    
+    decision = state.get("gate_decision", "pass")
+    if decision == "pass":
+        return "synthesize_summary"
+    
+    retry_target = state.get("retry_target")
+    if retry_target:
+        if state.get("verbose", True):
+            console.log(f"[yellow]Gate Agent triggering retry at: {retry_target}[/yellow]")
+        return retry_target
+        
+    return "synthesize_summary" # Fallback
+
+
+def create_graph(use_sync_nodes: bool = False, use_gate_agent: bool = False):
     """
     Creates and compiles the modular MERR construction graph.
     It can create either an asynchronous or a synchronous graph based on the flag.
@@ -86,6 +104,8 @@ def create_graph(use_sync_nodes: bool = False):
     else:
         console.log("Creating an [bold green]asynchronous[/bold green] graph.")
         from .nodes import async_nodes as nodes
+        if use_gate_agent:
+            from .nodes.gate_agent import GateAgent
 
     workflow = StateGraph(MERRState)
 
@@ -116,6 +136,11 @@ def create_graph(use_sync_nodes: bool = False):
         "generate_peak_frame_visual_description",
         nodes.generate_peak_frame_visual_description,
     )
+    
+    if use_gate_agent and not use_sync_nodes:
+        gate_agent_node = GateAgent()
+        workflow.add_node("gate_agent", gate_agent_node.run)
+        
     workflow.add_node("synthesize_summary", nodes.synthesize_summary)
     workflow.add_node("save_mer_results", nodes.save_mer_results)
 
@@ -191,7 +216,24 @@ def create_graph(use_sync_nodes: bool = False):
 
     # 3. Define MER pipeline sequence
     workflow.add_edge("extract_peak_image", "generate_audio_description")
-    workflow.add_edge("generate_peak_frame_visual_description", "synthesize_summary")
+    
+    if use_gate_agent and not use_sync_nodes:
+        workflow.add_edge("generate_peak_frame_visual_description", "gate_agent")
+        # Gate Agent routing
+        workflow.add_conditional_edges(
+            "gate_agent",
+            route_gate_agent,
+            {
+                "synthesize_summary": "synthesize_summary",
+                "generate_audio_description": "generate_audio_description",
+                "generate_video_description": "generate_video_description",
+                "generate_peak_frame_visual_description": "generate_peak_frame_visual_description",
+                "handle_error": "handle_error",
+            },
+        )
+    else:
+        workflow.add_edge("generate_peak_frame_visual_description", "synthesize_summary")
+        
     workflow.add_edge("synthesize_summary", "save_mer_results")
 
     # 4. Define Image pipeline sequence

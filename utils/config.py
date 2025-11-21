@@ -64,6 +64,7 @@ class AppConfig(BaseModel):
     silent: bool = False
     cache: bool = False
     concurrency: int = Field(4, ge=1)
+    use_gate_agent: bool = False
     ollama_vision_model: Optional[str] = None
     ollama_text_model: Optional[str] = None
     chatgpt_model: Optional[str] = None

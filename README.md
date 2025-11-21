@@ -72,6 +72,7 @@ Remove for now, call the (print(app.get_graph().draw_mermaid())) graph.py to vie
 -   **Video Analysis Pipeline**: Generates comprehensive descriptions of video content and context.
 -   **Image Analysis Pipeline**: Provides end-to-end emotion recognition for static images, complete with visual descriptions and emotional synthesis.
 -   **Full MER Pipeline**: An end-to-end multimodal pipeline that identifies peak emotional moments, analyzes all modalities (visual, audio, facial), and synthesizes a holistic emotional reasoning summary.
+-   **Gate Agent (Experimental)**: An optional quality control layer that reviews intermediate analysis results. Following the "garbage in, garbage out" principle, it rejects low-quality or conflicting outputs and prompts sub-agents to refine their analysis before final synthesis. Enable with `--use-gate-agent`.
 
 Check out example outputs here:
 -   [llava-llama3_llama3.2_merr_data.json](examples/llava-llama3_llama3.2_merr_data.json)
@@ -167,6 +168,7 @@ python dashboard.py
 | `--ollama-text-model` | `-otm` | Ollama text model name | None |
 | `--chatgpt-model` | `-cgm` | ChatGPT model name (e.g., gpt-4o) | None |
 | `--huggingface-model` | `-hfm` | Hugging Face model ID | None |
+| `--use-gate-agent` | `-uga` | Enable Gate Agent for quality control (Dev Feature) | False |
 
 ### Processing Types
 

@@ -20,6 +20,7 @@ class MERRState(TypedDict, total=False):
     verbose: bool  # Flag for detailed logging output.
     cache: bool  # Flag to reuse existing analysis results from previous runs.
     ground_truth_label: str  # Optional ground truth label for the media file.
+    use_gate_agent: bool  # Flag to enable/disable the Gate Agent.
 
     # === FILE & PATH MANAGEMENT ===
     video_path: Path  # Path to the source video or image file.
@@ -55,6 +56,11 @@ class MERRState(TypedDict, total=False):
     llm_au_description: (
         str  # LLM-generated interpretation of the facial expression from AUs.
     )
+
+    # === GATE AGENT STATE ===
+    gate_feedback: Dict[str, str]  # Feedback from the Gate Agent for each modality.
+    retry_counts: Dict[str, int]  # Number of retries performed for each modality.
+    dynamic_prompts: Dict[str, str]  # Dynamically generated prompts for re-runs.
 
     # === FINAL SYNTHESIS & ERROR HANDLING ===
     final_summary: str  # The final, synthesized multimodal summary from the LLM.
