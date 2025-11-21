@@ -220,7 +220,14 @@ Return ONLY the new instruction text. No preamble."""
             status = result.get("status", "pass")
             reason = result.get("reason", "")
             
-            if status == "fail":
+            if status == "pass":
+                # Clear dynamic prompt if it exists to prevent redundant re-runs
+                if modality in dynamic_prompts:
+                    if verbose:
+                        console.log(f"[dim]Clearing stale dynamic prompt for {modality} (Passed)[/dim]")
+                    del dynamic_prompts[modality]
+
+            elif status == "fail":
                 # Handle AU rejection: Do not retry, but remove from state
                 if modality == "au":
                     if verbose:

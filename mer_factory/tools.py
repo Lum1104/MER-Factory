@@ -100,8 +100,16 @@ class Tools:
     def run_terminal_command(self, command: str) -> str:
         """
         Executes a shell command if it is in the whitelist.
+        Securely parses arguments and disables shell execution to prevent injection.
         """
-        cmd_parts = command.split()
+        import shlex
+        
+        try:
+            # Use posix=False for better Windows path handling (backslashes)
+            cmd_parts = shlex.split(command, posix=False)
+        except Exception as e:
+            return f"Error parsing command: {str(e)}"
+
         if not cmd_parts:
             return "Error: Empty command."
         
@@ -110,16 +118,18 @@ class Tools:
             return f"Error: Command '{base_cmd}' is not in the whitelist. Allowed: {', '.join(self.whitelist_commands)}"
         
         try:
-            # Run command safely
+            # Run command safely with shell=False
             result = subprocess.run(
-                command, 
-                shell=True, 
+                cmd_parts, 
+                shell=False, 
                 capture_output=True, 
                 text=True, 
                 timeout=30
             )
             output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
             return output
+        except FileNotFoundError:
+            return f"Error: Command '{base_cmd}' not found. Note: shell=False is enforced, so shell builtins (like 'dir') or aliases may not work. Use absolute paths or 'list_dir' tool."
         except subprocess.TimeoutExpired:
             return "Error: Command timed out."
         except Exception as e:

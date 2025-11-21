@@ -366,7 +366,7 @@ async def generate_peak_frame_visual_description(state):
     peak_frame_path = Path(state["peak_frame_path"])
 
     # Check for dynamic prompt from Gate Agent
-    dynamic_prompt = state.get("dynamic_prompts", {}).get("image")
+    dynamic_prompt = state.get("dynamic_prompts", {}).get("peak_frame")
     if dynamic_prompt:
         prompt = dynamic_prompt
         if verbose:
