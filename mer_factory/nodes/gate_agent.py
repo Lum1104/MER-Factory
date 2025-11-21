@@ -21,12 +21,16 @@ class GateAgent:
             "au": None # AU extraction is deterministic and cannot be retried via prompting
         }
 
-    def get_evaluation_prompt(self, current_outputs: str) -> str:
+    def get_evaluation_prompt(self, current_outputs: str, ground_truth: str = "") -> str:
+        gt_section = ""
+        if ground_truth:
+            gt_section = f"\n**Ground Truth Label:**\n{ground_truth}\n(Use this as a strong reference. If analysis contradicts ground truth without strong evidence, reject it.)\n"
+
         return f"""You are the Gate Agent, an expert Quality Assurance Lead for a high-stakes Multimodal Emotion Reasoning system. Your responsibility is to strictly validate the analysis provided by sub-agents (Audio, Video, Peak Frame, AU) before they are synthesized.
 
 **Objective:**
 Ensure every modality provides **evidence-based**, **specific**, and **actionable** insights. Vague or generic descriptions must be rejected.
-
+{gt_section}
 **Current Analysis Outputs:**
 {current_outputs}
 
@@ -134,7 +138,8 @@ Return ONLY the new instruction text. No preamble."""
         
         # ReAct Loop
         max_turns = 5
-        conversation_history = self.get_evaluation_prompt(current_outputs)
+        ground_truth = state.get("ground_truth_label", "")
+        conversation_history = self.get_evaluation_prompt(current_outputs, ground_truth)
         
         evaluation = {}
         
