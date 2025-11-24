@@ -352,7 +352,15 @@ Return ONLY the new instruction text. No preamble."""
                         retry_target = self.node_map.get(modality)
                 else:
                     if verbose:
-                         console.log(f"[orange]Max retries reached for {modality}. Proceeding.[/orange]")
+                         console.log(f"[orange]Max retries reached for {modality}. Removing from final generation.[/orange]")
+                    
+                    # reset them to empty string
+                    modality_result_map = {
+                        "audio": "audio_analysis_results",
+                        "video": "video_description",
+                        "peak_frame": "image_visual_description"
+                    }
+                    updates[modality_result_map.get(modality)] = ""
         
         if verbose:
             console.log("[bold]Detailed Evaluation:[/bold]")
