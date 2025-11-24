@@ -29,7 +29,7 @@
 MER-Factory 正在积极开发中，新功能会定期添加 - 查看我们的[路线图](https://github.com/Lum1104/MER-Factory/wiki)，欢迎贡献！
 
 <div style="text-align: center;">
-  <img src="docs/assets/framework.svg" style="border: none; width: 100%; max-width: 1000px;">
+  <img src="docs/assets/mer-factory.jpeg" style="border: none; width: 100%; max-width: 1000px;">
 </div>
 
 ## 目录

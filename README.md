@@ -34,7 +34,8 @@
 MER-Factory is under active development with new features being added regularly - check our [roadmap](https://github.com/Lum1104/MER-Factory/wiki) and welcome contributions!
 
 <div style="text-align: center;">
-  <img src="docs/assets/framework.svg" style="border: none; width: 100%; max-width: 1000px;">
+  <img src="docs/assets/mer-factory.jpeg" style="border: none; width: 100%; max-width: 1000px;">
+  <!-- the figure generate by gemini 3, many thanks! -->
 </div>
 
 ## Table of Contents
