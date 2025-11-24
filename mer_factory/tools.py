@@ -118,9 +118,27 @@ class Tools:
             return f"Error: Command '{base_cmd}' is not in the whitelist. Allowed: {', '.join(self.whitelist_commands)}"
         
         try:
+            import os
+            
+            # Handle shell builtins based on OS
+            if os.name == "nt": # Windows
+                if base_cmd in ["dir", "echo", "type"]: # 'type' is Windows equivalent of 'cat'
+                    # Execute via cmd /c for Windows builtins
+                    final_cmd = ["cmd", "/c"] + cmd_parts
+                else:
+                    final_cmd = cmd_parts
+            else: # Posix (Linux/Mac)
+                if base_cmd == "dir":
+                    # 'dir' on Linux is usually 'ls -l', but let's just map it to 'ls' or warn
+                    # Ideally the agent should use 'ls' on Linux. 
+                    # If the agent uses 'dir' on Linux, it might exist (GNU coreutils dir), but let's assume standard behavior.
+                    final_cmd = cmd_parts 
+                else:
+                    final_cmd = cmd_parts
+
             # Run command safely with shell=False
             result = subprocess.run(
-                cmd_parts, 
+                final_cmd, 
                 shell=False, 
                 capture_output=True, 
                 text=True, 
@@ -129,7 +147,7 @@ class Tools:
             output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
             return output
         except FileNotFoundError:
-            return f"Error: Command '{base_cmd}' not found. Note: shell=False is enforced, so shell builtins (like 'dir') or aliases may not work. Use absolute paths or 'list_dir' tool."
+            return f"Error: Command '{base_cmd}' not found. Note: shell=False is enforced. For Windows builtins like 'dir' or 'echo', they are handled specially. Ensure other commands (e.g., ffmpeg) are in your PATH."
         except subprocess.TimeoutExpired:
             return "Error: Command timed out."
         except Exception as e:
@@ -167,3 +185,67 @@ class Tools:
             
         except Exception as e:
             return f"Python Execution Error: {str(e)}"
+
+    def extract_subtitles(self, file_path: str) -> str:
+        """
+        Extracts soft subtitles (e.g., srt, ass) from the video file if available.
+        Returns the subtitle text or a message indicating no subtitles were found.
+        """
+        path = Path(file_path)
+        if not path.exists():
+            return f"Error: File not found at {file_path}"
+        
+        import tempfile
+        import os
+        
+        # Create a temp file for the subtitle output
+        # We use .srt as a common format
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            
+        try:
+            # Command to extract the first subtitle stream (0:s:0)
+            # -map 0:s:0 selects the first subtitle stream from the first input
+            cmd = f'ffmpeg -i "{path}" -map 0:s:0 "{tmp_path}" -y'
+            
+            # We use shell=False and shlex for security, as per recent fixes
+            import shlex
+            cmd_parts = shlex.split(cmd, posix=False)
+            
+            result = subprocess.run(
+                cmd_parts,
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                # Check stderr for "Stream map '0:s:0' matches no streams" which means no subtitles
+                if "matches no streams" in result.stderr:
+                    return "No soft subtitles found in this video file."
+                return f"Error extracting subtitles: {result.stderr}"
+            
+            # Read the extracted file
+            try:
+                with open(tmp_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                
+                if not content.strip():
+                     return "Subtitle track found but it is empty."
+                     
+                # Limit content length to avoid overwhelming the context window
+                if len(content) > 2000:
+                    content = content[:2000] + "\n...[truncated]..."
+                    
+                return f"Extracted Subtitles:\n{content}"
+                
+            except UnicodeDecodeError:
+                 return "Subtitle track extracted but failed to decode (encoding issue)."
+                 
+        except Exception as e:
+            return f"Error during subtitle extraction: {str(e)}"
+        finally:
+            # Clean up temp file
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)

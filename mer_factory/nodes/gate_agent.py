@@ -1,3 +1,4 @@
+import os
 import json
 from rich.console import Console
 from ..models import LLMModels
@@ -22,6 +23,8 @@ class GateAgent:
         }
 
     def get_evaluation_prompt(self, current_outputs: str, ground_truth: str = "") -> str:
+        current_os = "Windows" if os.name == "nt" else "Linux/Mac"
+        
         gt_section = ""
         if ground_truth:
             gt_section = f"\n**Ground Truth Label:**\n{ground_truth}\n(Use this as a strong reference. If analysis contradicts ground truth without strong evidence, reject it.)\n"
@@ -36,10 +39,11 @@ Ensure every modality provides **evidence-based**, **specific**, and **actionabl
 
 **Available Tools:**
 Use these tools to verify data or resolve ambiguity. Do not guess.
-1. `run_terminal_command(command)`: Executes shell commands on **Windows** (whitelist: ffmpeg, dir, etc.).
+1. `run_terminal_command(command)`: Executes shell commands on **{current_os}** (whitelist: ffmpeg, dir/ls, etc.).
 2. `run_python_code(code)`: Executes Python code. Use for advanced verification if needed.
 3. `analyze_media_metrics(file_path)`: Returns audio intensity (dB) and duration. Use this to resolve conflicts (e.g., if Audio is "angry" but Face is "neutral", check if audio is loud/intense).
 4. `analyze_video_motion(file_path)`: Returns a motion analysis (dynamic vs static). Use this to verify if the video is just a talking head (static) or has action.
+5. `extract_subtitles(file_path)`: Extracts soft subtitles (if available). **Note:** Not all videos have subtitles. If missing, this tool will return a message stating so. Use this to verify speech content against Audio analysis.
 
 **Evaluation Criteria:**
 1.  **Audio**: Should aim to describe relevant emotional cues (e.g., tone, intensity) if present. Detailed acoustics are helpful but not mandatory if the emotion is clear.
@@ -177,6 +181,8 @@ Return ONLY the new instruction text. No preamble."""
                         tool_output = tools.analyze_media_metrics(tool_args.strip())
                     elif tool_name == "analyze_video_motion":
                         tool_output = tools.analyze_video_motion(tool_args.strip())
+                    elif tool_name == "extract_subtitles":
+                        tool_output = tools.extract_subtitles(tool_args.strip())
                     else:
                         tool_output = f"Error: Unknown tool '{tool_name}'"
                     
