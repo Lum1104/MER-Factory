@@ -15,12 +15,54 @@ class GateAgent:
     """
     
     def __init__(self):
+        console.rule("[bold purple]Gate Agent Function is Under Development, Please Use with Caution![/bold purple]")
         self.node_map = {
             "audio": "generate_audio_description",
             "video": "generate_video_description",
             "peak_frame": "generate_peak_frame_visual_description",
             "au": None # AU extraction is deterministic and cannot be retried via prompting
         }
+
+    def get_planning_prompt(self, current_outputs: str, ground_truth: str = "", gate_feedback: dict = None) -> str:
+        gt_section = ""
+        if ground_truth:
+            gt_section = f"\n**Ground Truth Label:**\n{ground_truth}\n"
+
+        feedback_section = ""
+        if gate_feedback:
+            feedback_items = [f"- {k}: {v}" for k, v in gate_feedback.items()]
+            feedback_section = "\n**Previous Rejection Reasons (History):**\n" + "\n".join(feedback_items) + "\n(Use this history to focus your verification on the corrected areas.)\n"
+
+        return f"""You are the Gate Agent, an expert Quality Assurance Lead.
+Your goal is to verify the quality of the multimodal analysis.
+
+**Current Analysis Outputs:**
+{current_outputs}
+{gt_section}
+{feedback_section}
+**Task:**
+Create a concise **Verification Plan** (TODO list) to check these outputs.
+
+**IMPORTANT LIMITATIONS:**
+- You CANNOT "see" video or "hear" audio directly. Do NOT plan to "watch" or "listen" to files.
+- You can Only use the provided tools:
+    - `analyze_media_metrics`: For audio volume/duration.
+    - `analyze_video_motion`: For static vs dynamic video check.
+    - `extract_subtitles`: For verifying speech content.
+    - `run_terminal_command`: For `ffmpeg` (metadata only).
+
+**Focus on:**
+1.  Identifying vague or generic claims.
+2.  Spotting conflicts between modalities (e.g., Audio says happy, Video says sad).
+3.  Deciding which tools to use for verification.
+
+**Output Format:**
+Return ONLY a numbered list of steps.
+Example:
+1. Check if Audio analysis mentions specific tone changes.
+2. Verify Video motion using `analyze_video_motion` because the description is static.
+3. Compare Audio and Video emotion for consistency.
+"""
 
     def get_evaluation_prompt(self, current_outputs: str, ground_truth: str = "") -> str:
         current_os = "Windows" if os.name == "nt" else "Linux/Mac"
@@ -51,7 +93,9 @@ Use these tools to verify data or resolve ambiguity. Do not guess.
 3.  **Peak Frame**: Should capture the main visual elements and facial expression. Gaze and subtle details are good to have but not strict requirements.
 4.  **Cross-Modality Consistency**: Compare the modalities. If one contradicts the others (e.g., Audio is "happy" but Video/AU are "angry"), reject the outlier unless it has strong evidence.
     *   **Conflict Tip 1**: If Audio is "Angry" but Face/AU is "Neutral", check `analyze_media_metrics`. High volume/intensity suggests the Audio is the primary emotional signal; the face might just be static. **Reject the Neutral AU/Face description** in this case to avoid conflicting signals.
-    *   **Conflict Tip 2**: If Video claims "high energy" but looks static, check `analyze_video_motion`. If it says "mostly static", reject the video description.
+    *   **Conflict Tip 2**: If Video claims "high energy" but looks static, check `analyze_video_motion`.
+        - If `analyze_video_motion` says "mostly static", reject the video description.
+        - **CRITICAL EXCEPTION**: `analyze_video_motion` measures PIXEL changes. A video can be "dynamic" (camera moving) even if the **subject** is standing still. Do NOT reject a description saying "subject is still" just because the tool says "dynamic". Only reject if the *entire scene* description contradicts the tool.
     *   **Neutral AU Rule**: If the AU analysis is "Neutral", ONLY pass it if the Audio/Video are also low-arousal/neutral. If other modalities are expressive, assume the AU failed to capture the emotion and **reject** the AU result.
 
 **Process:**
@@ -137,13 +181,28 @@ Return ONLY the new instruction text. No preamble."""
         **Data Paths:**
         - Audio File: {audio_path}
         - Video File: {video_path}
-        - OpenFace Data: {au_data_path}
         """
         
         # ReAct Loop
-        max_turns = 5
+        max_turns = 15
         ground_truth = state.get("ground_truth_label", "")
-        conversation_history = self.get_evaluation_prompt(current_outputs, ground_truth)
+        
+        # Step 1: Generate Verification Plan
+        if verbose:
+            console.log("[cyan]Gate Agent: Generating Verification Plan...[/cyan]")
+        
+        gate_feedback = state.get("gate_feedback", {})
+        planning_prompt = self.get_planning_prompt(current_outputs, ground_truth, gate_feedback)
+        verification_plan = await model.synthesize_summary(planning_prompt)
+        
+        if verbose:
+            console.log(f"[green]Verification Plan:[/green]\n{verification_plan}")
+            
+        # Step 2: Execute ReAct Loop with Plan
+        # We append the plan to the current outputs or context for the ReAct agent
+        current_outputs_with_plan = f"{current_outputs}\n\n**Verification Plan:**\n{verification_plan}"
+        
+        conversation_history = self.get_evaluation_prompt(current_outputs_with_plan, ground_truth)
         
         evaluation = {}
         
@@ -251,6 +310,9 @@ Return ONLY the new instruction text. No preamble."""
                     if verbose:
                         console.log(f"[yellow]Gate Agent rejected {modality}: {reason.strip()}[/yellow]")
                     
+                    # Store feedback for history awareness
+                    gate_feedback[modality] = reason.strip()
+                    
                     # Generate new prompt
                     original_prompt = ""
                     if modality == "audio":
@@ -268,6 +330,20 @@ Return ONLY the new instruction text. No preamble."""
                     new_prompt = await model.synthesize_summary(refine_prompt)
                     dynamic_prompts[modality] = new_prompt
                     retry_counts[modality] = retry_counts.get(modality, 0) + 1
+                    
+                    # Save refined prompt to file
+                    try:
+                        output_dir = state.get("video_output_dir")
+                        if output_dir:
+                            prompt_file = output_dir / f"refined_prompt_{modality}_{retry_counts[modality]}.txt"
+                            with open(prompt_file, "w", encoding="utf-8") as f:
+                                f.write(new_prompt)
+                            if verbose:
+                                console.log(f"[dim]Saved refined prompt to {prompt_file}[/dim]")
+                                console.log(f"[cyan]Refined Prompt Content:[/cyan]\n{new_prompt}")
+                    except Exception as e:
+                        if verbose:
+                            console.log(f"[red]Failed to save refined prompt: {e}[/red]")
                     
                     decision = "retry"
                     

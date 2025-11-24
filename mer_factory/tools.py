@@ -11,7 +11,7 @@ class Tools:
     """
 
     def __init__(self):
-        self.whitelist_commands = ["ffmpeg", "ls", "dir", "cat", "echo", "grep", "head", "tail"]
+        self.whitelist_commands = ["ffmpeg", "ffprobe", "ffplay", "ls", "dir", "cat", "echo", "grep", "head", "tail"]
 
     def analyze_media_metrics(self, file_path: str) -> str:
         """
@@ -120,18 +120,17 @@ class Tools:
         try:
             import os
             
-            # Handle shell builtins based on OS
+            if base_cmd in ["ffmpeg", "ffprobe", "ffplay"]:
+                if "-hide_banner" not in cmd_parts:
+                    cmd_parts.insert(1, "-hide_banner")
+            
             if os.name == "nt": # Windows
                 if base_cmd in ["dir", "echo", "type"]: # 'type' is Windows equivalent of 'cat'
-                    # Execute via cmd /c for Windows builtins
                     final_cmd = ["cmd", "/c"] + cmd_parts
                 else:
                     final_cmd = cmd_parts
             else: # Posix (Linux/Mac)
                 if base_cmd == "dir":
-                    # 'dir' on Linux is usually 'ls -l', but let's just map it to 'ls' or warn
-                    # Ideally the agent should use 'ls' on Linux. 
-                    # If the agent uses 'dir' on Linux, it might exist (GNU coreutils dir), but let's assume standard behavior.
                     final_cmd = cmd_parts 
                 else:
                     final_cmd = cmd_parts
@@ -144,7 +143,10 @@ class Tools:
                 text=True, 
                 timeout=30
             )
-            output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            if result.returncode != 0:
+                output = f"ERROR (exit code {result.returncode}):\n{result.stderr or result.stdout or 'Command failed with no output.'}"
+            else:
+                output = f"OUTPUT:\n{result.stdout or result.stderr or 'Command executed successfully (no output).'}"
             return output
         except FileNotFoundError:
             return f"Error: Command '{base_cmd}' not found. Note: shell=False is enforced. For Windows builtins like 'dir' or 'echo', they are handled specially. Ensure other commands (e.g., ffmpeg) are in your PATH."
@@ -204,13 +206,16 @@ class Tools:
             tmp_path = tmp_file.name
             
         try:
-            # Command to extract the first subtitle stream (0:s:0)
-            # -map 0:s:0 selects the first subtitle stream from the first input
-            cmd = f'ffmpeg -i "{path}" -map 0:s:0 "{tmp_path}" -y'
-            
-            # We use shell=False and shlex for security, as per recent fixes
-            import shlex
-            cmd_parts = shlex.split(cmd, posix=False)
+            # Construct command list directly to avoid shlex parsing issues with Windows paths
+            cmd_parts = [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel", "error",
+                "-i", str(path),
+                "-map", "0:s:0",
+                str(tmp_path),
+                "-y"
+            ]
             
             result = subprocess.run(
                 cmd_parts,

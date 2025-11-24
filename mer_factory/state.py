@@ -58,6 +58,8 @@ class MERRState(TypedDict, total=False):
     )
 
     # === GATE AGENT STATE ===
+    gate_decision: str  # The decision made by the Gate Agent ('pass' or 'retry').
+    retry_target: str  # The node to retry execution from.
     gate_feedback: Dict[str, str]  # Feedback from the Gate Agent for each modality.
     retry_counts: Dict[str, int]  # Number of retries performed for each modality.
     dynamic_prompts: Dict[str, str]  # Dynamically generated prompts for re-runs.
