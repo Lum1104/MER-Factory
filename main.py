@@ -88,7 +88,7 @@ def main_orchestrator(config: AppConfig):
         # --- Phase 2: Main Processing ---
         console.rule("[bold blue]Phase 2: Main Processing[/bold blue]")
         is_sync_model = models.model_type == "huggingface"
-        graph_app = create_graph(use_sync_nodes=is_sync_model)
+        graph_app = create_graph(use_sync_nodes=is_sync_model, use_gate_agent=config.use_gate_agent)
 
         initial_state_builder = functools.partial(
             build_initial_state,
@@ -185,6 +185,12 @@ def process(
         "-ca",
         help="Reuse existing audio/video/AU results from previous pipeline runs & cache LLM calls.",
     ),
+    use_gate_agent: bool = typer.Option(
+        False,
+        "--use-gate-agent",
+        "-uga",
+        help="Enable the Gate Agent for quality control and refinement (Dev Feature).",
+    ),
 ):
     """Processes media files for Multimodal Emotion Recognition and Reasoning (MERR)."""
     try:
@@ -200,6 +206,7 @@ def process(
             silent=silent,
             cache=cache,
             concurrency=concurrency,
+            use_gate_agent=use_gate_agent,
             ollama_vision_model=ollama_vision_model,
             ollama_text_model=ollama_text_model,
             chatgpt_model=chatgpt_model,
