@@ -50,6 +50,9 @@ MER-Factory is under active development with new features being added regularly 
   - [Command Line Options](#command-line-options)
   - [Processing Types](#processing-types)
   - [Export the Dataset](#export-the-dataset)
+  - [For Dataset Curation](#for-dataset-curation)
+  - [For Training with LLaMA-Factory](#for-training-with-llama-factory)
+  - [For Emotion-LLaMA MERR Format](#for-emotion-llama-merr-format)
   - [Evaluate the Results](#evaluate-the-results)
 - [Model Support](#model-support)
   - [Model Recommendations](#model-recommendations)
@@ -226,17 +229,36 @@ python main.py video.mp4 output/ --task "Sentiment Analysis"
 
 ### Export the Dataset
 
-To export datasets for curation or training, use the following commands:
+MER-Factory supports multiple export formats for different use cases:
 
 #### For Dataset Curation
+Export to CSV format for manual review and curation:
 ```bash
 python export.py --output_folder "{output_folder}" --file_type {file_type.lower()} --export_path "{export_path}" --export_csv
 ```
 
-#### For Training
+#### For Training with LLaMA-Factory
+Export to ShareGPT format for training:
 ```bash
 python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 ```
+
+#### For Emotion-LLaMA MERR Format
+Export datasets in the MERR (Multimodal Emotion Recognition and Reasoning) format compatible with [Emotion-LLaMA](https://github.com/chen-novak/Emotion-LLaMA). This format includes both coarse-grained and fine-grained annotations with Action Units, emotion peaks, and multimodal features.
+
+**Coarse-grained export:**
+```bash
+python export.py --output_folder "{output_folder}" --file_type mer --export_path "{export_path}" --export_format emotion-llama
+```
+
+**Fine-grained export:**
+```bash
+python export.py --output_folder "{output_folder}" --file_type mer --export_path "{export_path}" --export_format emotion-llama-fine
+```
+
+**Output files:**
+- `MERR_coarse_grained.txt` / `MERR_fine_grained.txt`: Format: `video_name frame_count emotion_class`
+- `MERR_coarse_grained.json` / `MERR_fine_grained.json`: Rich structure with AU_list, visual_prior_list, audio_prior_list, peak_index, peak_AU_list, pseu_emotion, and caption fields
 
 ### Evaluate the Results
 

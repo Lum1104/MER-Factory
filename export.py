@@ -1,6 +1,9 @@
-# We provide two export options:
+# We provide three export options:
 # 1. Follow the MERTools (https://github.com/zeroQiaoba/MERTools/) format to export label data to a CSV file.
 # 2. Follow the ShareGPT format in LLaMA-Factory (https://github.com/hiyouga/LLaMA-Factory/) to export data to JSON/JSONL files.
+# 3. Follow the Emotion-LLaMA MERR format to export data to:
+#    - MERR_coarse_grained.txt and MERR_coarse_grained.json (use --export_format emotion-llama)
+#    - MERR_fine_grained.txt and MERR_fine_grained.json (use --export_format emotion-llama-fine)
 # Open an issue if you have any questions or suggestions.
 
 import os
@@ -9,6 +12,8 @@ import glob
 import csv
 import argparse
 import random
+import re
+import pandas as pd
 from tqdm import tqdm
 
 
@@ -118,17 +123,20 @@ def process_json_file(json_file, file_type):
                 "file_type": file_type,
             }
         elif file_type == "mer":
-            # Special handling for MER files
+            # Special handling for MER files - preserve all data for MERR export
             chronological_emotion_peaks = data.get("chronological_emotion_peaks", [])
-            # Clean each emotion peak text
+            # Keep as list for MERR export, but also create string version for CSV
             cleaned_peaks = [
                 clean_text_for_csv(peak) for peak in chronological_emotion_peaks
             ]
             emotion_peaks_text = "; ".join(cleaned_peaks)
             coarse_descriptions = data.get("coarse_descriptions_at_peak", {})
+            overall_peak_frame_info = data.get("overall_peak_frame_info", {})
 
             return {
                 "source_path": source_path,
+                # Keep original list for MERR export
+                "chronological_emotion_peaks_list": chronological_emotion_peaks,
                 "chronological_emotion_peaks": emotion_peaks_text,
                 "visual_expression": clean_text_for_csv(
                     coarse_descriptions.get("visual_expression", "")
@@ -143,6 +151,8 @@ def process_json_file(json_file, file_type):
                     coarse_descriptions.get("video_content", "")
                 ),
                 "final_summary": clean_text_for_csv(data.get("final_summary", "")),
+                # Preserve peak frame info for MERR export
+                "overall_peak_frame_info": overall_peak_frame_info,
                 "file_type": file_type,
             }
         elif file_type == "audio":
@@ -282,8 +292,257 @@ def load_prompts(prompt_file):
         return {}
 
 
+def extract_emotion_from_peak(peak_text):
+    """
+    Extract the primary emotion from a chronological emotion peak text.
+
+    Args:
+        peak_text (str): The emotion peak text (e.g., "Peak at 2.88s: angry (slight), contempt (slight)")
+
+    Returns:
+        str: The extracted emotion label or "unknown" if not found
+    """
+    if not peak_text:
+        return "unknown"
+
+    # Try to extract the first emotion mentioned after the colon
+    if ":" in peak_text:
+        after_colon = peak_text.split(":", 1)[1].strip()
+        # Get the first emotion (before any comma or parenthesis)
+        for part in after_colon.split(","):
+            part = part.strip().split("(")[0].strip()
+            if part and len(part) < 20:  # Reasonable emotion word length
+                return part.lower()
+
+    # Fallback: try to find common emotion words
+    emotions = ['neutral', 'angry', 'happy', 'sad', 'worried', 'surprise', 'fear', 'contempt', 'doubt']
+    peak_lower = peak_text.lower()
+    for emotion in emotions:
+        if emotion in peak_lower:
+            return emotion
+
+    return "unknown"
+
+
+def get_video_name_from_path(source_path):
+    """
+    Extract video name from source path.
+
+    Args:
+        source_path (str): Full path to the video file
+
+    Returns:
+        str: Video name without extension
+    """
+    basename = os.path.basename(source_path)
+    # Remove extension
+    video_name = os.path.splitext(basename)[0]
+    return video_name
+
+
+def export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse", output_folder=None):
+    """
+    Exports data to Emotion-LLaMA MERR format (both .txt and .json files).
+
+    Args:
+        all_data (list): List of data dictionaries to export.
+        export_path (str): The directory to save the export files.
+        file_type (str): The type of data being processed (should be 'mer' for MERR export).
+        grain_type (str): Either 'coarse' or 'fine' for different annotation levels.
+        output_folder (str): The original output folder containing CSV files (for frame count).
+    """
+    merr_dict = {}
+    merr_txt_lines = []
+    samples_with_zero_frame_count = []  # Track samples missing CSV data
+
+    # Determine caption key and filenames based on grain_type
+    if grain_type == "fine":
+        caption_key = "smp_reason_caption"
+        json_filename = "MERR_fine_grained.json"
+        txt_filename = "MERR_fine_grained.txt"
+    else:  # coarse
+        caption_key = "caption"
+        json_filename = "MERR_coarse_grained.json"
+        txt_filename = "MERR_coarse_grained.txt"
+
+    for row in tqdm(all_data, desc=f"Formatting Emotion-LLaMA {grain_type}-grained MERR data"):
+        source_path = row.get("source_path", "")
+        final_summary = row.get("final_summary", "")
+        chronological_emotion_peaks = row.get("chronological_emotion_peaks_list", row.get("chronological_emotion_peaks", ""))
+        # overall_peak_frame_info comes from _merr_data.json (generated during MER-Factory processing)
+        # It contains: frame_number, timestamp, top_aus_intensities for the overall peak frame
+        overall_peak_frame_info = row.get("overall_peak_frame_info", {})
+        visual_expression = row.get("visual_expression", "")
+        audio_analysis = row.get("audio_analysis", "")
+
+        # Extract video name from source path
+        video_name = get_video_name_from_path(source_path)
+
+        # Get frame count from OpenFace CSV
+        frame_count = 0
+        if output_folder:
+            csv_path = os.path.join(output_folder, video_name, f"{video_name}.csv")
+            if os.path.exists(csv_path):
+                try:
+                    df = pd.read_csv(csv_path)
+                    frame_count = len(df)
+                except Exception as e:
+                    print(f"Warning: Could not read CSV {csv_path}: {e}")
+            else:
+                # Track samples with missing CSV
+                samples_with_zero_frame_count.append(video_name)
+        else:
+            # Track samples when output_folder is not provided
+            samples_with_zero_frame_count.append(video_name)
+
+        # Extract the OVERALL peak emotion (not just the first chronological peak)
+        # Match the peak timestamp to overall_peak_frame_info.timestamp
+        overall_peak_timestamp = overall_peak_frame_info.get("timestamp", 0)
+        emotion_class = "unknown"
+        peak_text = ""
+
+        if isinstance(chronological_emotion_peaks, list) and chronological_emotion_peaks:
+            # Try to find peak matching overall_peak_frame_info timestamp
+            for peak in chronological_emotion_peaks:
+                # Parse timestamp from peak text like "Peak at 2.88s: angry (slight)"
+                match = re.search(r'Peak at\s+(\d+\.?\d*)s:', peak)
+                if match:
+                    peak_timestamp = float(match.group(1))
+                    # Match if timestamps are close (within 0.1s tolerance)
+                    if abs(peak_timestamp - overall_peak_timestamp) < 0.1:
+                        peak_text = peak
+                        break
+
+            # Fallback: use first peak if no match found
+            if not peak_text:
+                peak_text = chronological_emotion_peaks[0]
+        else:
+            peak_text = chronological_emotion_peaks
+
+        emotion_class = extract_emotion_from_peak(peak_text)
+
+        # Extract AU list and peak frame info
+        peak_frame_number = overall_peak_frame_info.get("frame_number", 0)
+        top_aus = overall_peak_frame_info.get("top_aus_intensities", {})
+
+        # Build AU_list from visual_expression (parse AU names)
+        au_list = []
+        if visual_expression:
+            # Extract AU codes like "AU06", "AU12" from text
+            au_list = re.findall(r'AU\d+', visual_expression)
+
+        # Build peak_AU_list from top_aus (remove _r suffix)
+        peak_au_list = [au.replace('_r', '') for au in top_aus.keys()]
+
+        # Build visual_prior_list from visual_expression
+        visual_prior_list = []
+        if visual_expression:
+            # Split by comma and clean up
+            parts = visual_expression.split(',')
+            for part in parts[:3]:  # Take first 3 parts
+                clean_part = part.strip()
+                # Remove intensity info like "(intensity: 1.45)"
+                clean_part = re.sub(r'\(.*?\)', '', clean_part).strip()
+                if clean_part:
+                    visual_prior_list.append(clean_part)
+
+        # Extract audio_prior (first sentence or summary)
+        audio_prior = audio_analysis.split('.')[0] if audio_analysis else ""
+
+        # Note: We leave 'text' field empty for users to fill with ASR output
+        # The regex-based extraction below is unreliable and commented out
+        # Users should run an ASR model (e.g., Whisper) to extract accurate transcripts
+        # text = ""
+        # if "The audio transcript is:" in audio_analysis:
+        #     match = re.search(r'The audio transcript is:\s*[\"\']?([^\s\"\'.]+)', audio_analysis)
+        #     if match:
+        #         text = match.group(1)
+        # else:
+        #     match = re.search(r'[\"\']([^\"\']+)[\"\']', audio_analysis)
+        #     if match:
+        #         text = match.group(1)
+        text = ""
+
+        # For MERR TXT: video_name frame_count emotion_class (Option C)
+        merr_txt_lines.append(f"{video_name} {frame_count} {emotion_class}")
+
+        # For MERR JSON: Build rich structure
+        merr_entry = {
+            "AU_list": au_list,
+            "visual_prior_list": visual_prior_list,
+            "audio_prior_list": audio_prior,
+            "peak_index": str(peak_frame_number),
+            "peak_AU_list": peak_au_list,
+            "pseu_emotion": emotion_class,
+            caption_key: final_summary
+        }
+
+        # Add text field for fine-grained (always include, even if empty)
+        if grain_type == "fine":
+            merr_entry["text"] = text  # Will be empty string ""
+
+        merr_dict[video_name] = merr_entry
+
+    # Write MERR JSON file
+    json_path = os.path.join(export_path, json_filename)
+
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(merr_dict, f, indent=4, ensure_ascii=False)
+        print(f"Successfully exported MERR JSON to {json_path}")
+    except Exception as e:
+        print(f"Error exporting MERR JSON: {e}")
+
+    # Warning for fine-grained export about missing transcripts
+    if grain_type == "fine":
+        print("\n" + "="*70)
+        print("WARNING: 'text' field (transcript) is empty in MERR_fine_grained.json")
+        print("="*70)
+        print("The transcript field could not be reliably extracted from audio_analysis.")
+        print("")
+        print("To add transcripts, run an ASR model (e.g., Whisper) on your videos:")
+        print("  whisper video.mp4 --output_format json --output_dir transcripts/")
+        print("")
+        print("Then update the 'text' field in MERR_fine_grained.json with the extracted transcripts.")
+        print("="*70 + "\n")
+
+    # Warning for samples with frame_count = 0 (missing or unreadable CSV)
+    if samples_with_zero_frame_count:
+        print("\n" + "="*70)
+        print(f"WARNING: {len(samples_with_zero_frame_count)} sample(s) have frame_count = 0")
+        print("="*70)
+        print("The frame count could not be determined from the OpenFace CSV file.")
+        print("This happens when:")
+        print("  - The --output-folder was not specified")
+        print("  - The CSV file is missing (OpenFace did not run successfully)")
+        print("  - The CSV file exists but could not be read")
+        print("")
+        print("Affected samples:")
+        for video_name in samples_with_zero_frame_count[:10]:  # Show first 10
+            print(f"  - {video_name}")
+        if len(samples_with_zero_frame_count) > 10:
+            print(f"  ... and {len(samples_with_zero_frame_count) - 10} more")
+        print("")
+        print("To fix this, ensure:")
+        print("  1. You specified --output-folder when running export.py")
+        print("  2. OpenFace processing completed successfully")
+        print("  3. CSV files exist at: <output_folder>/<video_name>/<video_name>.csv")
+        print("="*70 + "\n")
+
+    # Write MERR TXT file
+    txt_path = os.path.join(export_path, txt_filename)
+
+    try:
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(merr_txt_lines))
+        print(f"Successfully exported MERR TXT to {txt_path}")
+        print(f"Total samples exported: {len(merr_txt_lines)}")
+    except Exception as e:
+        print(f"Error exporting MERR TXT: {e}")
+
+
 def export_to_json(
-    all_data, export_path, export_format, json_format, file_type, prompts
+    all_data, export_path, export_format, json_format, file_type, prompts, output_folder=None
 ):
     """
     Exports data to a JSON or JSONL file in a specified format.
@@ -291,11 +550,20 @@ def export_to_json(
     Args:
         all_data (list): List of data dictionaries to export.
         export_path (str): The directory to save the export file.
-        export_format (str): The format for the JSON structure ('sharegpt' for now).
+        export_format (str): The format for the JSON structure ('sharegpt', 'emotion-llama', or 'emotion-llama-fine').
         json_format (str): The file format ('json' or 'jsonl').
         file_type (str): The type of data being processed.
         prompts (dict): A dictionary containing lists of prompts for each file type.
+        output_folder (str): The original output folder for accessing CSV files.
     """
+    # Handle Emotion-LLaMA format export
+    if export_format == "emotion-llama":
+        export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse", output_folder=output_folder)
+        return
+    elif export_format == "emotion-llama-fine":
+        export_to_emotion_llama(all_data, export_path, file_type, grain_type="fine", output_folder=output_folder)
+        return
+
     # Define special tags and default instruction/output mappings
     tag_map = {
         "au": "<image>",
@@ -414,7 +682,7 @@ def main():
     )
     parser.add_argument(
         "--export_format",
-        choices=["sharegpt"],
+        choices=["sharegpt", "emotion-llama", "emotion-llama-fine"],
         default="sharegpt",
         type=str.lower,
         help="If specified, exports the data to a JSON file with this format.",
@@ -471,6 +739,7 @@ def main():
             args.json_format,
             file_type,
             prompts,
+            output_folder=None,  # No output_folder available when converting from CSV
         )
 
     elif args.output_folder and args.file_type:
@@ -496,6 +765,7 @@ def main():
                 args.json_format,
                 args.file_type,
                 prompts,
+                output_folder=args.output_folder,
             )
 
         if not args.export_csv and not args.export_format:
