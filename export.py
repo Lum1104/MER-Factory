@@ -340,6 +340,41 @@ def get_video_name_from_path(source_path):
     return video_name
 
 
+def safe_json_parse(value, expected_type, default=None):
+    """
+    Safely parse a JSON string or return the value if already the expected type.
+
+    This handles fields that may be JSON strings (from CSV export) or already-parsed objects
+    (from direct JSON processing).
+
+    Args:
+        value: The value to parse (could be str, dict, list, etc.)
+        expected_type: The expected type after parsing (dict, list, etc.)
+        default: The default value if parsing fails
+
+    Returns:
+        Parsed object or default value
+    """
+    if default is None:
+        default = expected_type()
+
+    # If already the expected type, return as-is
+    if isinstance(value, expected_type):
+        return value
+
+    # If it's a string, try to parse as JSON
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, expected_type):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Return default if parsing failed or type mismatch
+    return default
+
+
 def export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse", output_folder=None):
     """
     Exports data to Emotion-LLaMA MERR format (both .txt and .json files).
@@ -368,10 +403,29 @@ def export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse
     for row in tqdm(all_data, desc=f"Formatting Emotion-LLaMA {grain_type}-grained MERR data"):
         source_path = row.get("source_path", "")
         final_summary = row.get("final_summary", "")
-        chronological_emotion_peaks = row.get("chronological_emotion_peaks_list", row.get("chronological_emotion_peaks", ""))
+
+        # Safely parse fields that may be JSON strings (from CSV) or already-parsed objects (from JSON)
+        # chronological_emotion_peaks_list may be: list (from JSON), JSON string (from CSV), or missing
+        chronological_emotion_peaks_list = safe_json_parse(
+            row.get("chronological_emotion_peaks_list", "[]"),
+            list,
+            default=[]
+        )
+        # Fall back to chronological_emotion_peaks (semicolon-joined string) if list is empty
+        if not chronological_emotion_peaks_list:
+            chronological_emotion_peaks_str = row.get("chronological_emotion_peaks", "")
+            if chronological_emotion_peaks_str:
+                chronological_emotion_peaks_list = chronological_emotion_peaks_str.split("; ")
+
         # overall_peak_frame_info comes from _merr_data.json (generated during MER-Factory processing)
         # It contains: frame_number, timestamp, top_aus_intensities for the overall peak frame
-        overall_peak_frame_info = row.get("overall_peak_frame_info", {})
+        # May be: dict (from JSON), JSON string (from CSV), or missing
+        overall_peak_frame_info = safe_json_parse(
+            row.get("overall_peak_frame_info", "{}"),
+            dict,
+            default={}
+        )
+
         visual_expression = row.get("visual_expression", "")
         audio_analysis = row.get("audio_analysis", "")
 
@@ -401,9 +455,9 @@ def export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse
         emotion_class = "unknown"
         peak_text = ""
 
-        if isinstance(chronological_emotion_peaks, list) and chronological_emotion_peaks:
+        if isinstance(chronological_emotion_peaks_list, list) and chronological_emotion_peaks_list:
             # Try to find peak matching overall_peak_frame_info timestamp
-            for peak in chronological_emotion_peaks:
+            for peak in chronological_emotion_peaks_list:
                 # Parse timestamp from peak text like "Peak at 2.88s: angry (slight)"
                 match = re.search(r'Peak at\s+(\d+\.?\d*)s:', peak)
                 if match:
@@ -415,9 +469,9 @@ def export_to_emotion_llama(all_data, export_path, file_type, grain_type="coarse
 
             # Fallback: use first peak if no match found
             if not peak_text:
-                peak_text = chronological_emotion_peaks[0]
+                peak_text = chronological_emotion_peaks_list[0]
         else:
-            peak_text = chronological_emotion_peaks
+            peak_text = chronological_emotion_peaks_list
 
         emotion_class = extract_emotion_from_peak(peak_text)
 
