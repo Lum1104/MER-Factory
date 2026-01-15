@@ -8,7 +8,7 @@
   <a href="https://lum1104.github.io/MER-Factory/" target="_blank">📖 Documentation</a>
 </p>
 
-<p align="center"> <img src="https://img.shields.io/badge/Task-Multimodal_Emotion_Reasoning-red"> <img src="https://img.shields.io/badge/Task-Multimodal_Emotion_Recognition-red"> <img src="https://zenodo.org/badge/1007639998.svg" alt="DOI"> </p>
+<p align="center"> <img src="https://img.shields.io/badge/Task-Multimodal_Emotion_Reasoning-red"> <img src="https://img.shields.io/badge/Task-Multimodal_Emotion_Recognition-red"> <a href="https://zread.ai/Lum1104/MER-Factory" target="_blank"><img src="https://img.shields.io/badge/Ask_Zread-_.svg?style=plastic&color=00b0aa&labelColor=000000&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgNS42MDAxIDE0LjM5ODQgNS4zMTM1NiAxNC4zOTg0IDQuOTYwMVYyLjI0MDFDMTQuMzk4NCAxLjg4NjY0IDE0LjExMTkgMS42MDAxIDEzLjc1ODQgMS42MDAxWiIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNNCAxMkwxMiA0TDQgMTJaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00IDEyTDEyIDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K&logoColor=ffffff" alt="zread"/></a> <img src="https://zenodo.org/badge/1007639998.svg" alt="DOI"> </p>
 
 <p align="center">
   <a href="https://lum1104.github.io/MER-Factory/">
@@ -50,6 +50,9 @@ MER-Factory is under active development with new features being added regularly 
   - [Command Line Options](#command-line-options)
   - [Processing Types](#processing-types)
   - [Export the Dataset](#export-the-dataset)
+  - [For Dataset Curation](#for-dataset-curation)
+  - [For Training with LLaMA-Factory](#for-training-with-llama-factory)
+  - [For Emotion-LLaMA MERR Format](#for-emotion-llama-merr-format)
   - [Evaluate the Results](#evaluate-the-results)
 - [Model Support](#model-support)
   - [Model Recommendations](#model-recommendations)
@@ -226,17 +229,36 @@ python main.py video.mp4 output/ --task "Sentiment Analysis"
 
 ### Export the Dataset
 
-To export datasets for curation or training, use the following commands:
+MER-Factory supports multiple export formats for different use cases:
 
 #### For Dataset Curation
+Export to CSV format for manual review and curation:
 ```bash
 python export.py --output_folder "{output_folder}" --file_type {file_type.lower()} --export_path "{export_path}" --export_csv
 ```
 
-#### For Training
+#### For Training with LLaMA-Factory
+Export to ShareGPT format for training:
 ```bash
 python export.py --input_csv path/to/csv_file.csv --export_format sharegpt
 ```
+
+#### For Emotion-LLaMA MERR Format
+Export datasets in the MERR (Multimodal Emotion Recognition and Reasoning) format compatible with [Emotion-LLaMA](https://github.com/chen-novak/Emotion-LLaMA). This format includes both coarse-grained and fine-grained annotations with Action Units, emotion peaks, and multimodal features.
+
+**Coarse-grained export:**
+```bash
+python export.py --output_folder "{output_folder}" --file_type mer --export_path "{export_path}" --export_format emotion-llama
+```
+
+**Fine-grained export:**
+```bash
+python export.py --output_folder "{output_folder}" --file_type mer --export_path "{export_path}" --export_format emotion-llama-fine
+```
+
+**Output files:**
+- `MERR_coarse_grained.txt` / `MERR_fine_grained.txt`: Format: `video_name frame_count emotion_class`
+- `MERR_coarse_grained.json` / `MERR_fine_grained.json`: Rich structure with AU_list, visual_prior_list, audio_prior_list, peak_index, peak_AU_list, pseu_emotion, and caption fields
 
 ### Evaluate the Results
 

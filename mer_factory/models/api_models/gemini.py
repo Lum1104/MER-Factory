@@ -19,7 +19,7 @@ class GeminiModel:
     def __init__(self, api_key: str, verbose: bool = True):
         self.verbose = verbose
         self.model = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-lite", google_api_key=api_key, temperature=0
+            model="gemini-2.5-flash", google_api_key=api_key, temperature=0
         )
         self.vision_model = self.model  # Gemini models are multimodal
         if self.verbose:
