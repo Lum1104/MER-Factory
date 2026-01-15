@@ -105,7 +105,7 @@ def process_json_file(json_file, file_type):
         dict: Processed data or None if error
     """
     try:
-        with open(json_file, "r") as f:
+        with open(json_file, "r", encoding="utf-8") as f:
             data = json.load(f)
         source_path = data.get("source_path", "unknown")
 
