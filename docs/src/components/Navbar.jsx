@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import useScrollPosition from '../hooks/useScrollPosition';
 import './Navbar.css';
 
@@ -19,19 +20,9 @@ export default function Navbar() {
   const navLinks = (
     <>
       <li>
-        <a href="#features" onClick={closeMenu}>
-          Features
-        </a>
-      </li>
-      <li>
-        <a href="#quickstart" onClick={closeMenu}>
-          Quick Start
-        </a>
-      </li>
-      <li>
-        <a href="/MER-Factory/docs/" target="_blank" rel="noopener noreferrer" onClick={closeMenu}>
+        <Link to="/docs/" onClick={closeMenu}>
           Docs
-        </a>
+        </Link>
       </li>
       <li>
         <a
@@ -55,12 +46,12 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
-      <a href="/MER-Factory/" className="navbar-logo" onClick={closeMenu}>
+      <Link to="/" className="navbar-logo" onClick={closeMenu}>
         <img
           src={`${import.meta.env.BASE_URL}logo.svg`}
           alt="MER-Factory"
         />
-      </a>
+      </Link>
 
       <ul className="navbar-links">{navLinks}</ul>
 

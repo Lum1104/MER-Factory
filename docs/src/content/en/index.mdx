@@ -1,0 +1,82 @@
+---
+title: MER-Factory - Multimodal Emotion Recognition Factory
+description: Your automated factory for constructing Multimodal Emotion Recognition and Reasoning (MERR) datasets
+---
+
+# MER-Factory
+
+Your automated factory for constructing Multimodal Emotion Recognition and Reasoning (MERR) datasets.
+
+![MER-Factory Logo](/MER-Factory/images/logo.svg)
+
+## Project Roadmap
+
+MER-Factory is under active development with new features being added regularly - check our [roadmap](https://github.com/Lum1104/MER-Factory/wiki) and welcome contributions!
+
+## Quick Overview
+
+MER-Factory is a **Python-based, open-source framework** designed for the Affective Computing community. It automates the creation of unified datasets for training Multimodal Large Language Models (MLLMs) by extracting multimodal features and leveraging LLMs to generate detailed analyses and emotional reasoning summaries.
+
+### Key Features
+
+- **Multi-Pipeline Architecture**: Support for AU, Audio, Video, Image, and full MER processing.
+- **Flexible Analysis Tasks**: Choose between MERR and Sentiment Analysis.
+- **Flexible Model Integration**: Works with OpenAI, Google Gemini, Ollama, and Hugging Face models.
+- **Scalable Processing**: Async/concurrent processing for large datasets.
+- **Scientific Foundation**: Based on Facial Action Coding System (FACS) and latest research.
+- **Easy CLI Interface**: Simple command-line usage with comprehensive options.
+- **Interactive Tools**: Web-based dashboard for data curation and configuration management.
+
+### Processing Types
+
+| Pipeline | Description | Use Case |
+|---|---|---|
+| **AU** | Facial Action Unit extraction and description. | Facial expression analysis. |
+| **Audio** | Speech transcription and tonal analysis. | Audio emotion analysis. |
+| **Video** | Comprehensive video content description. | Video emotion analysis. |
+| **Image** | Static image emotion recognition. | Image-based emotion analysis. |
+| **MER** | Complete multimodal pipeline. | Full emotion reasoning datasets. |
+
+### Analysis Task Types
+
+The `--task` argument allows you to specify the analysis goal.
+
+| Task | `--task` argument | Description |
+|---|---|---|
+| **MERR** | `"MERR"` | (Default) Performs detailed analysis with MER. |
+| **Sentiment Analysis** | `"Sentiment Analysis"` | Performs sentiment-focused analysis (positive, negative, neutral). |
+
+### Example Outputs
+
+Check out real examples of what MER-Factory produces:
+- [Gemini Model Output](https://github.com/Lum1104/MER-Factory/blob/main/examples/gemini_merr.json)
+- [LLaVA Model Output](https://github.com/Lum1104/MER-Factory/blob/main/examples/llava-llama3_llama3.2_merr_data.json)
+
+## Architecture Overview
+
+- **CLI Framework**: Utilizes Typer for a robust and user-friendly command-line interface.
+- **Workflow Management**: Employs LangGraph to enable stateful and dynamic processing pipelines.
+- **Facial Analysis**: Integrates OpenFace for precise Facial Action Units extraction.
+- **Media Processing**: Leverages FFmpeg for advanced audio and video manipulation tasks.
+- **AI Integration**: Features a pluggable architecture supporting multiple LLM providers.
+- **Concurrency**: Implements Asyncio for efficient and scalable parallel processing.
+
+## Getting Started
+
+Ready to dive in? Here's what you need to know:
+
+1. **[Prerequisites](/docs/getting-started#prerequisites)** - Install FFmpeg and OpenFace
+2. **[Installation Guide](/docs/getting-started#installation)** - Set up MER-Factory
+3. **[Basic Usage](/docs/getting-started#your-first-pipeline)** - Your first emotion recognition pipeline
+4. **[Model Configuration](/docs/getting-started#model-options)** - Choose and configure your AI models
+5. **[Advanced Features](/docs/getting-started#next-steps)** - Explore all capabilities
+
+## Community & Support
+
+- **[Technical Documentation](/docs/technical-docs)** - Deep dive into system architecture
+- **[API Reference](/docs/api-reference)** - Complete function and class documentation
+- **[Examples](/docs/examples)** - Real-world usage examples and tutorials
+- [GitHub Issues](https://github.com/Lum1104/MER-Factory/issues) - Issues & Bug Reports
+- [GitHub Discussions](https://github.com/Lum1104/MER-Factory/discussions) - Discussions
+
+*Advancing together with the Affective Computing community.*

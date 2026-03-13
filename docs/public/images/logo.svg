@@ -1,0 +1,56 @@
+<svg width="625" height="100" viewBox="0 0 625 100" xmlns="http://www.w3.org/2000/svg">
+    <title>MER-Factory Logo</title>
+    <defs>
+        <style>
+            /* A clean, bold, sans-serif font is used for a modern, industrial feel. */
+            .logo-text {
+                font-family: 'Arial Black', Gadget, sans-serif;
+                font-size: 64px;
+                fill: #34495e; /* Dark Slate Grey */
+                dominant-baseline: middle;
+                text-anchor: middle;
+            }
+            .accent {
+                fill: #e67e22; /* Carrot Orange */
+            }
+        </style>
+    </defs>
+
+    <desc>A logo for MER-Factory.</desc>
+
+    <!-- Component: M -->
+    <text x="40" y="50" class="logo-text">M</text>
+
+    <!-- Component: E -->
+    <text x="100" y="50" class="logo-text">E</text>
+
+    <!-- Component: R -->
+    <text x="155" y="50" class="logo-text">R</text>
+
+    <!-- The EKG/Heartbeat Line -->
+    <path fill="none" stroke="#3498db" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M185,50 h15 l5,-15 l10,30 l5,-15 h15"/>
+
+    <!-- Component: F -->
+    <text x="260" y="50" class="logo-text">F</text>
+
+    <!-- Component: A -->
+    <text x="310" y="50" class="logo-text">A</text>
+
+    <!-- Component: C -->
+    <text x="365" y="50" class="logo-text">C</text>
+
+    <!-- Component: T -->
+    <text x="420" y="50" class="logo-text">T</text>
+
+    <!-- O (as a hex nut, with accent color) -->
+    <g id="char-O-creative" transform="translate(475, 45)">
+        <path class="accent" d="M0,24 L-20.78,12 L-20.78,-12 L0,-24 L20.78,-12 L20.78,12 Z" />
+        <path fill="white" d="M0,14 L-12.12,7 L-12.12,-7 L0,-14 L12.12,-7 L12.12,7 Z" />
+    </g>
+
+    <!-- Component: R -->
+    <text x="530" y="50" class="logo-text">R</text>
+    
+    <!-- Component: Y -->
+    <text x="585" y="50" class="logo-text">Y</text>
+</svg>

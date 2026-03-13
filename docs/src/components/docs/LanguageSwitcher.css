@@ -1,0 +1,22 @@
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  backdrop-filter: var(--glass-blur);
+}
+
+.lang-switcher:hover {
+  color: var(--text-primary);
+  border-color: var(--purple);
+  background: rgba(108, 92, 231, 0.1);
+}

@@ -1,9 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import './QuickStart.css';
 
 const codeLines = [
-  { type: 'comment', text: '# Clone the repository' },
+  { type: 'comment', text: '# Install prerequisites' },
+  {
+    tokens: [
+      { type: 'command', text: 'brew' },
+      { type: 'plain', text: ' install ' },
+      { type: 'string', text: 'ffmpeg' },
+    ],
+  },
+  { type: 'empty' },
+  { type: 'comment', text: '# Clone and set up MER-Factory' },
   {
     tokens: [
       { type: 'command', text: 'git' },
@@ -17,38 +27,72 @@ const codeLines = [
       { type: 'plain', text: ' MER-Factory' },
     ],
   },
-  { type: 'empty' },
-  { type: 'comment', text: '# Install dependencies' },
+  {
+    tokens: [
+      { type: 'command', text: 'conda' },
+      { type: 'plain', text: ' create ' },
+      { type: 'flag', text: '-n' },
+      { type: 'plain', text: ' mer-factory python=3.12' },
+    ],
+  },
+  {
+    tokens: [
+      { type: 'command', text: 'conda' },
+      { type: 'plain', text: ' activate ' },
+      { type: 'string', text: 'mer-factory' },
+    ],
+  },
   {
     tokens: [
       { type: 'command', text: 'pip' },
       { type: 'plain', text: ' install ' },
       { type: 'flag', text: '-r' },
-      { type: 'plain', text: ' ' },
-      { type: 'string', text: 'requirements.txt' },
+      { type: 'plain', text: ' requirements.txt' },
     ],
   },
+  { type: 'empty' },
+  { type: 'comment', text: '# Configure environment' },
+  {
+    tokens: [
+      { type: 'command', text: 'cp' },
+      { type: 'plain', text: ' .env.example ' },
+      { type: 'string', text: '.env' },
+    ],
+  },
+  { type: 'comment', text: '# Edit .env: set OPENFACE_EXECUTABLE, API keys' },
   { type: 'empty' },
   { type: 'comment', text: '# Run the pipeline' },
   {
     tokens: [
       { type: 'command', text: 'python' },
+      { type: 'plain', text: ' main.py ' },
+      { type: 'string', text: 'input/' },
       { type: 'plain', text: ' ' },
-      { type: 'string', text: 'main.py' },
+      { type: 'string', text: 'output/' },
       { type: 'plain', text: ' ' },
-      { type: 'flag', text: '--pipeline' },
-      { type: 'plain', text: ' mer ' },
-      { type: 'flag', text: '--input' },
-      { type: 'plain', text: ' ' },
-      { type: 'string', text: './data/sample.mp4' },
+      { type: 'flag', text: '--type' },
+      { type: 'plain', text: ' MER ' },
+      { type: 'flag', text: '--silent' },
     ],
   },
 ];
 
-const codeText = `git clone https://github.com/Lum1104/MER-Factory.git
+const codeText = `# Install prerequisites
+brew install ffmpeg
+
+# Clone and set up MER-Factory
+git clone https://github.com/Lum1104/MER-Factory.git
 cd MER-Factory
+conda create -n mer-factory python=3.12
+conda activate mer-factory
 pip install -r requirements.txt
-python main.py --pipeline mer --input ./data/sample.mp4`;
+
+# Configure environment
+cp .env.example .env
+# Edit .env: set OPENFACE_EXECUTABLE, API keys
+
+# Run the pipeline
+python main.py input/ output/ --type MER --silent`;
 
 function renderLine(line, index) {
   if (line.type === 'empty') {
@@ -166,9 +210,9 @@ export default function QuickStart() {
           </div>
         </div>
 
-        <a className="docs-link" href="/MER-Factory/docs/">
+        <Link className="docs-link" to="/docs/">
           Read the full documentation &rarr;
-        </a>
+        </Link>
       </div>
     </motion.section>
   );

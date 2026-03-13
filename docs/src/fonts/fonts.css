@@ -1,0 +1,29 @@
+/* Self-hosted Google Fonts (latin only) */
+
+/* Fraunces — display/headings (variable: weights 400-900, optical size 9-144) */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  font-optical-sizing: auto;
+  src: url('./fraunces-latin.woff2') format('woff2');
+}
+
+/* JetBrains Mono — code (variable: weights 400-500) */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('./jetbrains-mono-latin.woff2') format('woff2');
+}
+
+/* Outfit — body text (variable: weights 300-700) */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('./outfit-latin.woff2') format('woff2');
+}

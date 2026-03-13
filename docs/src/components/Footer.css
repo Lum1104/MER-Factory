@@ -102,6 +102,16 @@
   font-size: 0.85rem;
 }
 
+.footer--docs {
+  margin-left: var(--docs-sidebar-width, 260px);
+}
+
+@media (max-width: 1024px) {
+  .footer--docs {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .footer-grid {
     grid-template-columns: 1fr;

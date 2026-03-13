@@ -1,3 +1,5 @@
+@import './fonts/fonts.css';
+
 :root {
   /* Colors */
   --bg: #0f0a1a;
@@ -21,6 +23,12 @@
   /* Spacing */
   --section-padding: clamp(3rem, 8vw, 6rem);
   --max-width: 1200px;
+
+  /* Docs layout */
+  --docs-sidebar-width: 260px;
+  --docs-toc-width: 200px;
+  --docs-content-max-width: 800px;
+  --docs-nav-height: 64px;
 }
 
 *,

@@ -6,17 +6,25 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "build:docs": "bash build-docs.sh",
-    "dev:full": "bash build-docs.sh && vite"
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@mdx-js/react": "^3.1.1",
+    "framer-motion": "^11.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "framer-motion": "^11.15.0"
+    "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
+    "@mdx-js/rollup": "^3.1.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-pretty-code": "^0.14.3",
+    "rehype-slug": "^6.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx-frontmatter": "^5.2.0",
+    "shiki": "^4.0.2",
     "vite": "^6.0.0"
   }
 }

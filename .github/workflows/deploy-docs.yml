@@ -28,7 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Build React homepage (Vite) ──
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,36 +39,13 @@ jobs:
         run: npm ci
         working-directory: ./docs
 
-      - name: Build homepage with Vite
+      - name: Build with Vite
         run: npm run build
         working-directory: ./docs
 
-      # ── Build Jekyll docs ──
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
-          bundler-cache: true
-          working-directory: ./docs/guide
-
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v4
-
-      - name: Build docs with Jekyll
-        run: |
-          cd docs/guide
-          bundle exec jekyll build --baseurl "/MER-Factory/docs"
-        env:
-          JEKYLL_ENV: production
-
-      # ── Merge outputs ──
-      - name: Merge Vite + Jekyll outputs
-        run: |
-          # Vite output is in docs/dist/ (served at /MER-Factory/)
-          # Jekyll output is in docs/guide/_site/ (served at /MER-Factory/docs/)
-          mkdir -p docs/dist/docs
-          cp -r docs/guide/_site/* docs/dist/docs/
+      # SPA fallback for GitHub Pages client-side routing
+      - name: Create 404 fallback
+        run: cp docs/dist/index.html docs/dist/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

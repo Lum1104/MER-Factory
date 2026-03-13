@@ -1,8 +1,12 @@
+import { Link, useLocation } from 'react-router-dom';
 import './Footer.css';
 
 function Footer() {
+  const { pathname } = useLocation();
+  const inDocs = pathname.startsWith('/docs') || pathname.startsWith('/zh/docs');
+
   return (
-    <footer className="footer">
+    <footer className={`footer${inDocs ? ' footer--docs' : ''}`}>
       <div className="footer-container">
         <div className="footer-grid">
           <div className="footer-brand">
@@ -19,10 +23,10 @@ function Footer() {
           <div className="footer-column">
             <h4>Resources</h4>
             <ul>
-              <li><a href="/MER-Factory/docs/">Documentation</a></li>
-              <li><a href="/MER-Factory/docs/getting-started">Getting Started</a></li>
-              <li><a href="/MER-Factory/docs/api-reference">API Reference</a></li>
-              <li><a href="/MER-Factory/docs/examples">Examples</a></li>
+              <li><Link to="/docs/">Documentation</Link></li>
+              <li><Link to="/docs/getting-started">Getting Started</Link></li>
+              <li><Link to="/docs/api-reference">API Reference</Link></li>
+              <li><Link to="/docs/examples">Examples</Link></li>
             </ul>
           </div>
 
