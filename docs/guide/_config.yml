@@ -2,7 +2,7 @@
 title: MER-Factory Documentation
 description: Your automated factory for constructing Multimodal Emotion Recognition and Reasoning (MERR) datasets
 url: "https://Lum1104.github.io"
-baseurl: "/MER-Factory"
+baseurl: "/MER-Factory/docs"
 
 # Multi-language support
 languages: ["en", "zh"]

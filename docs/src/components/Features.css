@@ -1,0 +1,212 @@
+/* ===== Features Section ===== */
+
+.features-section {
+  padding: var(--section-padding) 2rem;
+}
+
+.features-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+/* Title */
+.features-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--text-primary);
+}
+
+/* ===== Pipeline Feature Cards Grid ===== */
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Individual card */
+.feature-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  border-top: 3px solid transparent;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Color variants */
+.feature-card--coral {
+  border-top-color: var(--coral);
+}
+
+.feature-card--coral:hover {
+  border-color: var(--coral);
+  border-top-color: var(--coral);
+}
+
+.feature-card--gold {
+  border-top-color: var(--gold);
+}
+
+.feature-card--gold:hover {
+  border-color: var(--gold);
+  border-top-color: var(--gold);
+}
+
+.feature-card--teal {
+  border-top-color: var(--teal);
+}
+
+.feature-card--teal:hover {
+  border-color: var(--teal);
+  border-top-color: var(--teal);
+}
+
+.feature-card--purple {
+  border-top-color: var(--purple);
+}
+
+.feature-card--purple:hover {
+  border-color: var(--purple);
+  border-top-color: var(--purple);
+}
+
+.feature-card--mer {
+  position: relative;
+  border-top-color: transparent;
+  overflow: hidden;
+}
+
+.feature-card--mer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--coral), var(--purple));
+}
+
+.feature-card--mer:hover {
+  border-color: var(--purple);
+}
+
+/* Card icon */
+.feature-card-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card title */
+.feature-card-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+/* Card description */
+.feature-card-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ===== Value Proposition Section ===== */
+
+.values-section {
+  margin-top: 4rem;
+}
+
+.values-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.value-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem 1.25rem;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.value-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.value-card-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.value-card-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.value-card-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-section {
+    padding: var(--section-padding) 1rem;
+  }
+}

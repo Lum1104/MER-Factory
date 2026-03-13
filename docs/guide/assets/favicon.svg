@@ -1,0 +1,33 @@
+<!-- 
+  这是一个为您的项目“MER-Factory”设计的创意“M”字母SVG图标。
+  它设计简洁、现代，适合用作网页标签图标（favicon）。
+-->
+<svg width="64" height="64" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>字母M创意图标</title>
+  
+  <!-- 定义一个优雅的蓝紫色渐变 -->
+  <defs>
+    <linearGradient id="mGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6; stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 
+    使用单一条路径绘制字母“M”。
+    - `d`: 定义了路径的形状。
+    - `stroke`: 应用上面定义的渐变色。
+    - `stroke-width`: 设置线条的粗细，使其在小尺寸下也清晰可见。
+    - `stroke-linecap` 和 `stroke-linejoin`: 设置线条的端点和连接处为圆形，使外观更平滑。
+    - `fill`: 设置为"none"，表示不填充任何颜色，只显示线条。
+  -->
+  <path 
+    d="M 4 20 V 4 L 12 12 L 20 4 V 20" 
+    stroke="url(#mGradient)" 
+    stroke-width="3" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    fill="none" 
+  />
+</svg>
+

@@ -1,0 +1,129 @@
+.quickstart-section {
+  padding: var(--section-padding) 2rem;
+}
+
+.quickstart-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.quickstart-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  text-align: center;
+  margin-bottom: 2.5rem;
+  color: var(--text-primary);
+}
+
+.code-block {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.code-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.code-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.code-dot--red {
+  background-color: #ff5f57;
+}
+
+.code-dot--yellow {
+  background-color: #febc2e;
+}
+
+.code-dot--green {
+  background-color: #28c840;
+}
+
+.code-title {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+}
+
+.copy-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--teal);
+}
+
+.copy-btn--copied {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.code-content {
+  padding: 1.5rem;
+  overflow-x: auto;
+  font-family: var(--font-code);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.code-content pre {
+  margin: 0;
+  white-space: pre;
+}
+
+.token-comment {
+  color: #6a6a8a;
+}
+
+.token-command {
+  color: var(--teal);
+}
+
+.token-flag {
+  color: var(--gold);
+}
+
+.token-string {
+  color: var(--coral);
+}
+
+.docs-link {
+  display: block;
+  text-align: center;
+  margin-top: 2rem;
+  color: var(--teal);
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.docs-link:hover {
+  opacity: 0.8;
+}

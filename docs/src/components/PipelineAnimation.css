@@ -1,0 +1,29 @@
+.pipeline-section {
+  padding: var(--section-padding) 2rem;
+  text-align: center;
+}
+
+.pipeline-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  margin-bottom: 3rem;
+  color: var(--text-primary);
+}
+
+.pipeline-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  overflow-x: auto;
+}
+
+.pipeline-svg {
+  min-width: 700px;
+}
+
+@media (max-width: 480px) {
+  .pipeline-container {
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 1rem;
+  }
+}
