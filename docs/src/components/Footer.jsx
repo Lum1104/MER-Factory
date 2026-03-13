@@ -67,11 +67,27 @@ function Footer() {
         <div className="footer-citation">
           <details>
             <summary>Cite MER-Factory</summary>
-            <pre><code>{`@article{lian2025mer,
-  title={MER-Factory: Towards Building An Automated MER Dataset Factory},
-  author={Lian, Zheng and others},
-  journal={arXiv preprint arXiv:2503.03275},
-  year={2025}
+            <pre><code>{`@software{Lin_MER-Factory_2025,
+  author = {Lin, Yuxiang and Zheng, Shunchao},
+  doi = {10.5281/zenodo.15847351},
+  license = {MIT},
+  month = {7},
+  title = {{MER-Factory}},
+  url = {https://github.com/Lum1104/MER-Factory},
+  version = {0.1.0},
+  year = {2025}
+}
+
+@inproceedings{NEURIPS2024_c7f43ada,
+  author = {Cheng, Zebang and Cheng, Zhi-Qi and He, Jun-Yan and Wang, Kai and Lin, Yuxiang and Lian, Zheng and Peng, Xiaojiang and Hauptmann, Alexander},
+  booktitle = {Advances in Neural Information Processing Systems},
+  editor = {A. Globerson and L. Mackey and D. Belgrave and A. Fan and U. Paquet and J. Tomczak and C. Zhang},
+  pages = {110805--110853},
+  publisher = {Curran Associates, Inc.},
+  title = {Emotion-LLaMA: Multimodal Emotion Recognition and Reasoning with Instruction Tuning},
+  url = {https://proceedings.neurips.cc/paper_files/paper/2024/file/c7f43ada17acc234f568dc66da527418-Paper-Conference.pdf},
+  volume = {37},
+  year = {2024}
 }`}</code></pre>
           </details>
         </div>
